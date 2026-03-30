@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const SETTINGS_PATH = path.resolve('src/data/settings.json');
+const DATA_DIR = path.resolve(process.cwd(), 'data');
+const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
 
 export interface FeedSetting {
   id: string;
@@ -33,6 +34,9 @@ export async function getSettings(): Promise<SiteSettings> {
 }
 
 export async function saveSettings(settings: SiteSettings) {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+  } catch(e) {}
   await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8');
 }
 
