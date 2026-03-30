@@ -1,0 +1,128 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import { getSettings } from '../lib/config';
+
+const settings = await getSettings();
+const url = new URL(Astro.request.url);
+const success = url.searchParams.has('success');
+---
+
+<Layout title="Administración">
+  <Navbar />
+  
+  <main class="flex-grow pt-10 pb-20 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
+        <div class="px-6 py-8 border-b border-gray-100 bg-[#CD212A] text-white">
+          <h1 class="text-3xl font-serif font-black tracking-tight">Consola de Administración</h1>
+          <p class="mt-2 text-red-100 opacity-90">Configura las fuentes de noticias y la música ambiental para la pantalla.</p>
+        </div>
+
+        {success && (
+          <div class="mx-6 mt-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl relative animate-pulse" role="alert">
+            <span class="block sm:inline font-bold">✓ Configuración actualizada con éxito.</span>
+          </div>
+        )}
+
+        <form action="/api/save-settings" method="POST" class="p-8 space-y-10">
+          
+          {/* PASSWORD SECTION */}
+          <section class="space-y-4">
+            <h2 class="text-xl font-bold text-gray-900 flex items-center">
+              <span class="w-2 h-8 bg-[#008C45] rounded-full mr-3"></span>
+              Seguridad
+            </h2>
+            <div class="bg-red-50 p-6 rounded-2xl border border-red-100">
+              <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Contraseña de administrador</label>
+              <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                required 
+                placeholder="Introduzca la clave para guardar cambios"
+                class="block w-full px-4 py-3 rounded-xl border-gray-200 focus:border-[#CD212A] focus:ring-[#CD212A] transition shadow-sm"
+              />
+            </div>
+          </section>
+
+          {/* NEWS PROVIDERS SECTION */}
+          <section class="space-y-6">
+            <h2 class="text-xl font-bold text-gray-900 flex items-center">
+              <span class="w-2 h-8 bg-[#74ACDF] rounded-full mr-3"></span>
+              Proveedores de Noticias RSS
+            </h2>
+            <div class="space-y-4">
+              {settings.feeds.map(feed => (
+                <div class="flex flex-col md:flex-row md:items-center p-6 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 transition shadow-sm space-y-4 md:space-y-0">
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-gray-900">{feed.name}</span>
+                        <span class={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${feed.country === 'IT' ? 'bg-[#008C45]' : 'bg-[#74ACDF]'}`}>
+                           {feed.country}
+                        </span>
+                    </div>
+                    <input 
+                      type="text" 
+                      name={`url_${feed.id}`} 
+                      value={feed.url}
+                      class="mt-2 block w-full text-sm text-gray-500 border-none p-0 focus:ring-0 bg-transparent truncate"
+                    />
+                  </div>
+                  <div class="flex items-center md:ml-6">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" name={`enabled_${feed.id}`} checked={feed.enabled} class="sr-only peer" />
+                      <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#008C45]"></div>
+                      <span class="ml-3 text-sm font-medium text-gray-900">Activo</span>
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p class="text-xs text-gray-400 font-medium">* Desactiva los proveedores que estén fallando o que no desees mostrar temporalmente.</p>
+          </section>
+
+          {/* MUSIC SECTION */}
+          <section class="space-y-4">
+             <h2 class="text-xl font-bold text-gray-900 flex items-center">
+              <span class="w-2 h-8 bg-black rounded-full mr-3"></span>
+              Música Ambiental (YouTube)
+            </h2>
+            <div class="bg-gray-100 p-6 rounded-2xl border border-gray-200">
+               <label for="youtubeUrl" class="block text-sm font-semibold text-gray-700 mb-2">URL del video o playlist de YouTube</label>
+               <input 
+                 type="url" 
+                 id="youtubeUrl" 
+                 name="youtubeUrl" 
+                 value={settings.youtubeUrl}
+                 placeholder="Ej: https://www.youtube.com/watch?v=..."
+                 class="block w-full px-4 py-3 rounded-xl border-gray-200 focus:border-red-500 focus:ring-red-500 transition shadow-sm"
+               />
+               <p class="text-xs text-gray-500 mt-2 italic">Se reproducirá en bucle y modo silencioso de forma automática en la portada (puedes activarle el sonido en la TV).</p>
+            </div>
+          </section>
+
+          <div class="pt-6">
+            <button 
+              type="submit" 
+              class="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg text-lg font-bold text-white bg-[#CD212A] hover:bg-[#b01c24] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#CD212A] transition-all transform hover:scale-[1.01] active:scale-[0.99]"
+            >
+              Guardar todos los cambios
+            </button>
+          </div>
+
+        </form>
+      </div>
+      
+      <div class="mt-8 text-center">
+          <a href="/" class="text-sm font-bold text-[#74ACDF] hover:underline flex items-center justify-center">
+              <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+              Volver a la portada de noticias
+          </a>
+      </div>
+    </div>
+  </main>
+  
+  <Footer />
+</Layout>

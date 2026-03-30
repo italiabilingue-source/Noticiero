@@ -1,0 +1,72 @@
+---
+import type { NewsItem } from '../lib/config';
+
+interface Props {
+  article: NewsItem;
+}
+
+const { article } = Astro.props;
+
+// Date formatter
+const dateObj = new Date(article.pubDate);
+const formattedDate = new Intl.DateTimeFormat('es-AR', {
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+}).format(dateObj);
+
+// Placeholder image based on category
+const fallbacks: Record<string, string> = {
+  'política': 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=600&h=400&fit=crop',
+  'economía': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop',
+  'sociedad': 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&h=400&fit=crop',
+  'tecnología': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=400&fit=crop',
+  'cultura': 'https://images.unsplash.com/photo-1456086272160-b22343fc1638?w=600&h=400&fit=crop',
+  'internacional': 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=600&h=400&fit=crop'
+};
+
+const imageUrl = article.imageUrl || fallbacks[article.category] || fallbacks['internacional'];
+---
+
+<article class="flex flex-col bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 overflow-hidden transition-all duration-300 group">
+  <a href={article.link} target="_blank" rel="noopener noreferrer" class="relative block h-48 sm:h-56 overflow-hidden bg-gray-100">
+    <img 
+      src={imageUrl} 
+      alt={`Imagen para ${article.title}`}
+      class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+      loading="lazy"
+    />
+    <div class="absolute top-3 left-3 flex space-x-2">
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-800 shadow-sm capitalize uppercase tracking-wider backdrop-blur-sm bg-opacity-90">
+        {article.category}
+      </span>
+      {article.country === 'IT' && (
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white shadow-sm overflow-hidden" title="Fuente Italiana">
+            <span class="flex w-full h-full"><span class="flex-1 bg-[#008C45]"></span><span class="flex-1 bg-white"></span><span class="flex-1 bg-[#CD212A]"></span></span>
+        </span>
+      )}
+      {article.country === 'AR' && (
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white shadow-sm overflow-hidden" title="Fuente Argentina">
+            <span class="flex flex-col w-full h-full"><span class="flex-1 bg-[#74ACDF]"></span><span class="flex-1 bg-white relative"><span class="absolute inline-block w-1.5 h-1.5 bg-yellow-400 rounded-full left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"></span></span><span class="flex-1 bg-[#74ACDF]"></span></span>
+        </span>
+      )}
+    </div>
+  </a>
+  <div class="flex-1 flex flex-col p-5">
+    <div class="flex items-center text-xs text-gray-500 mb-2 space-x-2">
+      <span class="font-medium text-[#CD212A]">{article.source}</span>
+      <span>•</span>
+      <time datetime={article.pubDate}>{formattedDate}</time>
+    </div>
+    
+    <a href={article.link} target="_blank" rel="noopener noreferrer" class="block flex-1 group">
+      <h3 class="text-xl font-serif font-bold text-gray-900 group-hover:text-[#CD212A] transition-colors leading-tight mb-3 line-clamp-3">
+        {article.title}
+      </h3>
+      <p class="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+        {article.summary}
+      </p>
+    </a>
+  </div>
+</article>

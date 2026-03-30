@@ -1,0 +1,58 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+const SETTINGS_PATH = path.resolve('src/data/settings.json');
+
+export interface FeedSetting {
+  id: string;
+  name: string;
+  url: string;
+  country: string;
+  enabled: boolean;
+}
+
+export interface SiteSettings {
+  feeds: FeedSetting[];
+  youtubeUrl: string;
+}
+
+export async function getSettings(): Promise<SiteSettings> {
+  try {
+    const data = await fs.readFile(SETTINGS_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (e) {
+    // Default settings if file doesn't exist
+    return {
+      feeds: [
+        { id: 'lanacion', name: 'La Nación', url: 'https://www.lanacion.com.ar/arc/outboundfeeds/rss/?outputType=xml', country: 'AR', enabled: true },
+        { id: 'repubblica', name: 'La Repubblica', url: 'https://www.repubblica.it/rss/homepage/rss2.0.xml', country: 'IT', enabled: true }
+      ],
+      youtubeUrl: ''
+    };
+  }
+}
+
+export async function saveSettings(settings: SiteSettings) {
+  await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8');
+}
+
+export const FORBIDDEN_WORDS = [
+  "robo", "asesinato", "crimen", "violencia", "muerte", "policial", "mató", "tiroteo", "violación", "abuso", "sangre", "secuestro", "narcotráfico", "cadáver", "homicidio", "femicidio", "accidente", "choque", "tragedia"
+];
+
+export const CATEGORIES = ["política", "economía", "sociedad", "tecnología", "cultura", "internacional"];
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  summary: string;
+  contentSnippet: string;
+  source: string;
+  country: string;
+  category: string;
+  imageUrl?: string;
+  isFeatured: boolean;
+  displayMode?: 'short' | 'medium' | 'long';
+}

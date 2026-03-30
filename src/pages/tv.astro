@@ -1,0 +1,338 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getNews } from '../lib/newsService';
+import { getSettings } from '../lib/config';
+
+// 1. Obtener Datos
+const allNews = await getNews();
+const tvNews = allNews.slice(0, 15);
+
+const settings = await getSettings();
+const ytId = getYoutubeId(settings.youtubeUrl);
+const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&showinfo=0&autohide=1` : null;
+
+function getYoutubeId(url: string) {
+    if (!url) return null;
+    const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+// Transformación Automática Inteligente de Títulos
+function formatTVTitle(title: string): string {
+    let clean = title;
+    
+    // Si tiene un patrón de partido, intenta extraerlo limpio (ej. Argentina vs. Zambia)
+    if (clean.includes("vs.")) {
+        const teams = clean.match(/([A-Z][a-zA-Z\s]+)\s+vs\.?\s+([A-Z][a-zA-Z\s]+)/i);
+        if (teams) return `${teams[1].trim()} vs. ${teams[2].trim()}`;
+    }
+
+    // Regla: A veces la coma corta el contexto basura ("Cuándo juega Boca, por la fecha...")
+    if (clean.includes(",") && clean.length > 60) {
+        clean = clean.split(",")[0];
+    }
+    
+    // Regla: Si hay dos puntos, a veces lo importante es lo primero o el resumen
+    if (clean.includes(":") && clean.length > 70) {
+        const parts = clean.split(":");
+        clean = parts[0].length > 15 ? parts[0] : parts[1];
+    }
+
+    return clean.trim();
+}
+
+const processedForTv = tvNews.map((item, index) => {
+    // Usar el texto largo para hacer teleprompter real
+    const fullText = (item.contentSnippet && item.contentSnippet.length > item.summary.length) 
+                     ? item.contentSnippet.trim() 
+                     : item.summary.trim();
+    
+    // Cálculo Dinámico Basado en Palabras (0.35s - 0.4s por palabra)
+    const wordsCount = fullText.split(/\s+/).length + formatTVTitle(item.title).split(/\s+/).length;
+    let dur = Math.max(10000, wordsCount * 400); // 10s min, 0.4s por palabra
+    if (dur > 35000) dur = 35000; // Cap a 35s max para no aburrir a nadie
+    
+    return { 
+        ...item, 
+        tvTitle: formatTVTitle(item.title),
+        fullText: fullText,
+        duration: dur
+    };
+});
+---
+
+<Layout title="Modo TV - Cartelera Profesional">
+  <main class="fixed inset-0 bg-black overflow-hidden select-none outline-none tv-main" tabindex="0">
+    
+    <div id="tv-carousel" class="relative w-full h-full">
+      {processedForTv.map((article, aIndex) => (
+        <div 
+          class={`absolute inset-0 tv-article ${aIndex === 0 ? 'active' : ''}`}
+          data-article={aIndex}
+          data-duration={article.duration}
+        >
+          {/* Fondo Inmersivo */}
+          <div class="absolute inset-0 bg-black">
+             <img 
+               src={article.imageUrl || `https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1920&q=80`} 
+               alt="" 
+               class="w-full h-full object-cover origin-center ken-burns opacity-70"
+             />
+             <div class="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black/40 backdrop-blur-[8px]"></div>
+          </div>
+
+          <div class="relative w-full h-full flex flex-col justify-end p-12 lg:p-20 pb-28">
+            <div class="max-w-7xl w-full mx-auto relative">
+                
+                {/* [CATEGORÍA] | [FUENTE - FECHA] */}
+                <div class="flex items-center shadow-sm mb-4 opacity-0 header-anim text-gray-400 font-bold uppercase tracking-widest text-lg">
+                    <span class="text-[#008C45] mr-3">■</span>
+                    <span class="text-white mr-4">{article.category}</span>
+                    <span class="mx-3 text-white/30 truncate flex-1">
+                        / <strong class="text-white/80 mx-2">{article.source.toUpperCase()}</strong> / 
+                        ESTA SEMANA
+                    </span>
+                </div>
+
+                {/* TÍTULO LIMPIO Y CORTO */}
+                <h1 class="text-5xl md:text-[4.5rem] font-serif font-black text-white leading-tight drop-shadow-2xl line-clamp-2 mb-6 opacity-0 title-anim max-w-6xl">
+                   {article.tvTitle}
+                </h1>
+
+                {/* BARRA DE PROGRESO ANIMADA EXACTAMENTE ARRIBA DEL TEXTO */}
+                <div class="h-1.5 w-full bg-white/10 rounded-full mb-8 overflow-hidden opacity-0 title-anim">
+                     <div class="progress-bar h-full bg-gradient-to-r from-[#008C45] via-[#CD212A] to-[#74ACDF] w-0"></div>
+                </div>
+
+                {/* SCROLL SUAVE (TELEPROMPTER) PARA CONTENIDO LARGO */}
+                <div class="bg-black/50 p-10 px-12 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative opacity-0 content-anim max-w-5xl">
+                    <div class="overflow-hidden h-[240px] relative prompter-mask">
+                        <div class="prompter-content">
+                            <p class="text-[2.3rem] text-gray-100 font-light leading-[1.8] tracking-wide">
+                               {article.fullText}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {/* INFO INFERIOR TIPO CANAL REAL */}
+                    <div class="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-400 font-bold tracking-widest uppercase text-sm">
+                        <div class="flex items-center space-x-8">
+                            <span class="flex items-center"><svg class="w-5 h-5 mr-2 text-white/50" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg> {article.country === 'IT' ? 'Roma, IT' : 'Buenos Aires, AR'}</span>
+                            <span class="flex items-center"><svg class="w-5 h-5 mr-2 text-[#CD212A]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"></path><path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z"></path></svg> {article.source}</span>
+                        </div>
+                        <span class="flex items-center text-[#74ACDF]">
+                             <svg class="w-5 h-5 mr-2 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 
+                             Actualizado {new Date(article.pubDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Video de YouTube */}
+    {embedUrl && (
+        <div class="absolute bottom-10 right-12 w-[300px] h-[170px] rounded-2xl overflow-hidden shadow-2xl z-30 opacity-70 border border-white/10 pointer-events-none mix-blend-screen bg-black">
+            <iframe 
+               class="w-full h-full transform scale-[1.3]" 
+               src={embedUrl}
+               title="Música de Ambiente" 
+               frameborder="0" 
+               allow="accelerometer; autoplay; encrypted-media; gyroscope;" 
+               allowfullscreen></iframe>
+        </div>
+    )}
+
+    {/* Marca Header */}
+    <div class="absolute top-10 left-12 flex items-center space-x-6 z-30">
+        <div class="text-3xl font-serif font-black text-white drop-shadow-md tracking-tighter">
+            NOTICIAS<span class="text-[#008C45]">.</span>GLOBAL
+        </div>
+        <div class="w-1.5 h-1.5 rounded-full bg-white/30"></div>
+        <div id="tv-clock" class="text-3xl font-mono font-medium text-white tracking-wider tabular-nums drop-shadow-md">
+            00:00
+        </div>
+        <div class="w-1.5 h-1.5 rounded-full bg-white/30"></div>
+        <div class="flex items-center text-[#CD212A] font-bold tracking-[0.2em] text-sm uppercase">
+            <span class="relative flex h-3 w-3 mr-3 shadow-md">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+            EN DIRECTO
+        </div>
+    </div>
+
+    {/* Interacción Inicial Transparente Obligatoria para Navegadores Modernos */}
+    <div id="fs-overlay" class="absolute inset-0 z-50 bg-black/80 flex items-center justify-center cursor-pointer backdrop-blur-sm transition-opacity duration-500">
+        <div class="text-center animate-pulse">
+            <svg class="w-20 h-20 text-white mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h2 class="text-4xl font-black text-white uppercase tracking-widest">Tocar pantalla</h2>
+            <p class="text-gray-400 mt-4 text-xl tracking-wider">Para iniciar el Noticiero a pantalla completa</p>
+        </div>
+    </div>
+
+  </main>
+</Layout>
+
+<style>
+  .tv-article {
+      opacity: 0;
+      z-index: 0;
+      transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tv-article.active {
+      opacity: 1;
+      z-index: 10;
+  }
+
+  /* Ken Burns Persistente y Lento */
+  .ken-burns {
+      transform: scale(1.0);
+      transition: transform 60s linear; /* Muy Lento y profesional */
+  }
+  .tv-article.active .ken-burns {
+      transform: scale(1.15);
+  }
+
+  /* Animaciones Base */
+  .tv-article.active .header-anim { animation: fadeIn 1s ease-out 0.2s forwards; }
+  .tv-article.active .title-anim { animation: fadeIn 1s ease-out 0.4s forwards; }
+  .tv-article.active .content-anim { animation: fadeIn 1s ease-out 0.8s forwards; }
+
+  @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Teleprompter Scroll Infinito Animado vía JS */
+  .prompter-mask {
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  }
+  
+  .prompter-content {
+      transform: translateY(10px); /* Start pos */
+  }
+
+  .animate-spin-slow {
+      animation: spin 3s linear infinite;
+  }
+
+  /* True TV Mode */
+  body { overflow: hidden; background: black; }
+  .tv-main.is-fullscreen { cursor: none !important; }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+      const articles = document.querySelectorAll('.tv-article');
+      if(articles.length === 0) return;
+
+      let timer: number | null = null;
+      let scrollerFrame: number | null = null;
+
+      function playPrompter(container: HTMLElement, duration: number) {
+          if (scrollerFrame) cancelAnimationFrame(scrollerFrame);
+          
+          const textHeight = container.scrollHeight;
+          const maskHeight = container.parentElement!.clientHeight;
+          
+          container.style.transform = `translateY(10px)`; // Reiniciar pos
+          
+          // Si no necesita scroll, se queda estático
+          if (textHeight <= maskHeight) {
+              container.style.transform = `translateY(0px)`;
+              return;
+          }
+
+          // Distancia a scrollear: desde 0 hasta la porción que sobra
+          const distance = textHeight - maskHeight + 40; 
+          const moveTime = duration - 3000; // Dejar 1.5s neutro al inicio y final
+          const speed = distance / moveTime; 
+
+          let start: number | null = null;
+          function animateScroll(timestamp: number) {
+              if (!start) start = timestamp;
+              const elapsed = timestamp - start;
+
+              // Empezar a mover tras 1.0s de gracia
+              if (elapsed > 1000 && elapsed < moveTime + 1000) {
+                  const currentY = (elapsed - 1000) * speed;
+                  container.style.transform = `translateY(-${currentY}px)`;
+              }
+
+              scrollerFrame = requestAnimationFrame(animateScroll);
+          }
+          scrollerFrame = requestAnimationFrame(animateScroll);
+      }
+
+      function showArticle(index: number) {
+          articles.forEach((a, i) => {
+              if (i === index) a.classList.add('active');
+              else a.classList.remove('active');
+          });
+
+          const current = articles[index] as HTMLElement;
+          const duration = parseInt(current.dataset.duration || '10000', 10);
+          
+          // Animar Barra (está por encima del texto)
+          const bar = current.querySelector('.progress-bar') as HTMLElement;
+          if (bar) {
+              bar.style.transition = 'none';
+              bar.style.width = '0%';
+              requestAnimationFrame(() => {
+                  setTimeout(() => {
+                      bar.style.transition = `width ${duration}ms linear`;
+                      bar.style.width = '100%';
+                  }, 50);
+              });
+          }
+
+          // Animar el Scroll (Teleprompter)
+          const contentWrapper = current.querySelector('.prompter-content') as HTMLElement;
+          if (contentWrapper) {
+              playPrompter(contentWrapper, duration);
+          }
+
+          // Agendar próximo
+          if (timer) window.clearTimeout(timer);
+          timer = window.setTimeout(() => {
+              showArticle((index + 1) % articles.length);
+          }, duration);
+      }
+
+      // Reloj vivo
+      const clock = document.getElementById('tv-clock');
+      setInterval(() => {
+          if(clock) clock.textContent = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      }, 1000);
+
+      // Superposición de Fullscreen Inicial (Para navegadores modernos que bloquean)
+      const overlay = document.getElementById('fs-overlay');
+      const main = document.querySelector('.tv-main');
+      
+      if (overlay) {
+          overlay.addEventListener('click', () => {
+              if (!document.fullscreenElement) {
+                  document.documentElement.requestFullscreen().catch(() => {});
+              }
+              overlay.style.opacity = '0';
+              setTimeout(() => overlay.remove(), 500); // desaparecer y limpiar DOM
+              
+              // Arrancar Noticiero justo cuando tocan
+              showArticle(0);
+          });
+      }
+
+      document.addEventListener('fullscreenchange', () => {
+          if (document.fullscreenElement) main?.classList.add('is-fullscreen');
+          else main?.classList.remove('is-fullscreen');
+      });
+
+      // Recarga anti-fugas y para obtener RSS nuevo (30 min)
+      setTimeout(() => { window.location.reload(); }, 30 * 60 * 1000);
+  });
+</script>

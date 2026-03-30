@@ -1,0 +1,91 @@
+---
+import type { NewsItem } from '../lib/config';
+
+interface Props {
+  article: NewsItem;
+}
+
+const { article } = Astro.props;
+
+// Date formatter
+const dateObj = new Date(article.pubDate);
+const formattedDate = new Intl.DateTimeFormat('es-AR', {
+  month: 'long',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+}).format(dateObj);
+
+// Placeholder image based on category
+const fallbacks: Record<string, string> = {
+  'política': 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1200&h=800&fit=crop',
+  'economía': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=800&fit=crop',
+  'sociedad': 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1200&h=800&fit=crop',
+  'tecnología': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=800&fit=crop',
+  'cultura': 'https://images.unsplash.com/photo-1456086272160-b22343fc1638?w=1200&h=800&fit=crop',
+  'internacional': 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1200&h=800&fit=crop'
+};
+
+const imageUrl = article.imageUrl || fallbacks[article.category] || fallbacks['internacional'];
+---
+
+<article class="relative flex flex-col lg:flex-row bg-white rounded-2xl shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 group border border-gray-100 col-span-1 lg:col-span-2 or lg:col-span-full">
+  {/* Image Section */}
+  <a href={article.link} target="_blank" rel="noopener noreferrer" class="relative block w-full lg:w-3/5 h-64 sm:h-80 lg:h-[450px] overflow-hidden bg-gray-100">
+    <img 
+      src={imageUrl} 
+      alt={`Imagen para ${article.title}`}
+      class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-[1.03]"
+    />
+    <div class="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent lg:hidden"></div>
+  </a>
+
+  {/* Content Section */}
+  <div class="relative flex-1 flex flex-col justify-center p-6 sm:p-8 lg:p-12 bg-white z-10 -mt-16 lg:mt-0 lg:-ml-8 lg:rounded-l-2xl shadow-[-10px_0_20px_rgba(0,0,0,0.05)] lg:shadow-none">
+    
+    <div class="flex items-center mb-4 space-x-3">
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-widest text-[#008C45] bg-green-50 uppercase">
+        {article.category}
+      </span>
+      {article.country === 'IT' && (
+        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full overflow-hidden shadow-sm border border-gray-200" title="Fuente Italiana">
+            <span class="flex w-full h-full"><span class="flex-1 bg-[#008C45]"></span><span class="flex-1 bg-white"></span><span class="flex-1 bg-[#CD212A]"></span></span>
+        </span>
+      )}
+      {article.country === 'AR' && (
+        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full overflow-hidden shadow-sm border border-gray-200" title="Fuente Argentina">
+            <span class="flex flex-col w-full h-full"><span class="flex-1 bg-[#74ACDF]"></span><span class="flex-1 bg-white relative"><span class="absolute inline-block w-1 h-1 bg-yellow-400 rounded-full left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"></span></span><span class="flex-1 bg-[#74ACDF]"></span></span>
+        </span>
+      )}
+    </div>
+
+    <a href={article.link} target="_blank" rel="noopener noreferrer" class="block group/link">
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-gray-900 leading-tight mb-4 group-hover/link:text-[#CD212A] transition-colors">
+        {article.title}
+      </h2>
+      <p class="text-base sm:text-lg text-gray-600 mb-6 line-clamp-3 sm:line-clamp-4 leading-relaxed font-light">
+        {article.summary}
+      </p>
+    </a>
+
+    <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-6">
+      <div class="flex items-center space-x-3">
+        <div class="flex-shrink-0">
+          <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100">
+            <svg class="h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" clip-rule="evenodd"/></svg>
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-semibold text-gray-900">{article.source}</span>
+          <time datetime={article.pubDate} class="text-xs text-gray-500">{formattedDate}</time>
+        </div>
+      </div>
+      
+      <a href={article.link} target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-semibold text-[#CD212A] hover:text-[#008C45] transition-colors">
+        Leer artículo
+        <svg class="ml-1.5 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+      </a>
+    </div>
+
+  </div>
+</article>

@@ -1,0 +1,96 @@
+---
+import '../styles/global.css';
+import { getSettings } from '../lib/config';
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+const settings = await getSettings();
+
+// Extract video ID for embed
+function getYoutubeId(url: string) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+const videoId = getYoutubeId(settings.youtubeUrl);
+const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&autohide=1` : null;
+
+const currentPath = Astro.url.pathname;
+const isTvMode = currentPath === '/tv';
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Portal de noticias institucionales internacionales" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title} | Noticias Globales</title>
+        
+        <!-- Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	</head>
+	<body class="bg-[#f8f9fa] text-gray-900 font-sans antialiased flex flex-col min-h-screen">
+		<slot />
+
+        {/* Hidden YouTube Background Music for TV (only render in normal layout, TV mode handles its own) */}
+        {embedUrl && !isTvMode && (
+            <div class={`fixed bottom-4 right-4 z-[100] transition-opacity duration-500 pointer-events-none group ${isTvMode ? 'opacity-30' : 'opacity-0 hover:opacity-100'}`}>
+                <div class="bg-black/80 backdrop-blur-md p-2 rounded-xl border border-white/20 shadow-2xl overflow-hidden pointer-events-auto">
+                    <iframe 
+                       class={`${isTvMode ? 'w-32 h-20' : 'w-48 h-28'} rounded-lg`}
+                       src={embedUrl}
+                       title="Musica de Fondo" 
+                       frameborder="0" 
+                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                       referrerpolicy="strict-origin-when-cross-origin" 
+                       allowfullscreen></iframe>
+                    <div class="mt-2 text-[10px] text-gray-300 font-bold px-1 flex items-center justify-between">
+                         <span>MÚSICA AMBIENTAL ACTIVADA</span>
+                         <span class="animate-pulse flex items-center"><span class="w-1.5 h-1.5 bg-red-500 rounded-full mr-1"></span> TV MODE</span>
+                    </div>
+                </div>
+            </div>
+        )}
+	</body>
+</html>
+
+<style is:global>
+    :root {
+        --color-ita-green: #008C45;
+        --color-ita-red: #CD212A;
+        --color-arg-blue: #74ACDF;
+    }
+    
+    html {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .font-serif {
+        font-family: 'Playfair Display', serif;
+    }
+
+    /* Minimalist scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #999;
+    }
+</style>
