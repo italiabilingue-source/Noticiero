@@ -4,6 +4,14 @@ import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import { getSettings } from '../lib/config';
 
+// Verificar autenticación
+const cookies = Astro.request.headers.get('cookie') || '';
+const isAuthenticated = cookies.includes('admin_session=true');
+
+if (!isAuthenticated) {
+  return Astro.redirect('/admin-login?redirect=/admin');
+}
+
 const settings = await getSettings();
 const url = new URL(Astro.request.url);
 const success = url.searchParams.has('success');
@@ -15,9 +23,17 @@ const success = url.searchParams.has('success');
   <main class="flex-grow pt-10 pb-20 bg-gray-50">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
-        <div class="px-6 py-8 border-b border-gray-100 bg-[#CD212A] text-white">
-          <h1 class="text-3xl font-serif font-black tracking-tight">Consola de Administración</h1>
-          <p class="mt-2 text-red-100 opacity-90">Configura las fuentes de noticias y la música ambiental para la pantalla.</p>
+        <div class="px-6 py-8 border-b border-gray-100 bg-[#CD212A] text-white flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-serif font-black tracking-tight">Consola de Administración</h1>
+            <p class="mt-2 text-red-100 opacity-90">Configura las fuentes de noticias y la música ambiental para la pantalla.</p>
+          </div>
+          <a
+            href="/api/admin-logout"
+            class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition text-sm"
+          >
+            Cerrar sesión
+          </a>
         </div>
 
         {success && (
@@ -27,25 +43,6 @@ const success = url.searchParams.has('success');
         )}
 
         <form action="/api/save-settings" method="POST" class="p-8 space-y-10">
-          
-          {/* PASSWORD SECTION */}
-          <section class="space-y-4">
-            <h2 class="text-xl font-bold text-gray-900 flex items-center">
-              <span class="w-2 h-8 bg-[#008C45] rounded-full mr-3"></span>
-              Seguridad
-            </h2>
-            <div class="bg-red-50 p-6 rounded-2xl border border-red-100">
-              <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Contraseña de administrador</label>
-              <input 
-                type="password" 
-                id="password" 
-                name="password" 
-                required 
-                placeholder="Introduzca la clave para guardar cambios"
-                class="block w-full px-4 py-3 rounded-xl border-gray-200 focus:border-[#CD212A] focus:ring-[#CD212A] transition shadow-sm"
-              />
-            </div>
-          </section>
 
           {/* NEWS PROVIDERS SECTION */}
           <section class="space-y-6">

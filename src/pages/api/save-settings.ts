@@ -2,12 +2,13 @@ import type { APIRoute } from 'astro';
 import { getSettings, saveSettings } from '../../lib/config';
 
 export const POST: APIRoute = async ({ request, redirect }) => {
-  const data = await request.formData();
-  const password = data.get('password');
-
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return new Response(JSON.stringify({ error: 'Contraseña incorrecta' }), { status: 401 });
+  // Validar que el usuario tiene sesión activa
+  const cookies = request.headers.get('cookie') || '';
+  if (!cookies.includes('admin_session=true')) {
+    return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 });
   }
+
+  const data = await request.formData();
 
   const currentSettings = await getSettings();
   const updatedFeeds = currentSettings.feeds.map(f => {

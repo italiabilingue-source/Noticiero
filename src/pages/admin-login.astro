@@ -1,0 +1,70 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const url = new URL(Astro.request.url);
+const error = url.searchParams.has('error');
+---
+
+<Layout title="Acceso de Administración">
+  <main class="flex-grow min-h-screen flex items-center justify-center bg-gradient-to-br from-[#CD212A] via-red-600 to-red-800 px-4">
+    <div class="w-full max-w-md">
+      <div class="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+        {/* Header */}
+        <div class="px-6 py-10 bg-gradient-to-r from-[#008C45] to-[#006b34] text-white text-center">
+          <h1 class="text-4xl font-serif font-black tracking-tight">NOTICIAS.BILI</h1>
+          <p class="mt-2 text-green-100 opacity-90 text-sm">Panel de Administración</p>
+        </div>
+
+        {/* Login Form */}
+        <form action="/api/admin-login" method="POST" class="p-8 space-y-6">
+          {error && (
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl" role="alert">
+              <span class="block font-bold">✗ Contraseña incorrecta</span>
+              <span class="text-sm">Intenta de nuevo con la contraseña correcta.</span>
+            </div>
+          )}
+
+          <div class="space-y-2">
+            <label for="password" class="block text-sm font-bold text-gray-900">
+              <span class="flex items-center">
+                <svg class="w-5 h-5 mr-2 text-[#CD212A]" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                </svg>
+                Contraseña de administrador
+              </span>
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              autofocus
+              placeholder="Ingresa la contraseña"
+              class="block w-full px-4 py-3 border h-12 border-gray-300 rounded-xl focus:border-[#CD212A] focus:ring-2 focus:ring-[#CD212A]/20 transition placeholder-gray-400"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-3 px-4 border border-transparent rounded-xl shadow-lg font-bold text-white bg-gradient-to-r from-[#CD212A] to-red-700 hover:from-[#b01c24] hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#CD212A] transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Acceder
+          </button>
+
+          <input type="hidden" name="redirect" value={Astro.url.searchParams.get('redirect') || '/admin'} />
+        </form>
+
+        {/* Footer */}
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 text-center">
+          <a href="/" class="text-sm font-medium text-[#74ACDF] hover:text-[#008C45] transition">
+            ← Volver a inicio
+          </a>
+        </div>
+      </div>
+
+      <div class="mt-6 text-center text-sm text-white/80">
+        <p>Ingresa la contraseña del administrador para acceder al panel de control</p>
+      </div>
+    </div>
+  </main>
+</Layout>
