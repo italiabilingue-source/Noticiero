@@ -143,34 +143,88 @@ function getDisplayMode(summaryLength: number): 'short' | 'medium' | 'long' {
 export function categorizeContent(title: string, summary: string, defaultCategory: string): string {
   const text = normalizeText(`${title} ${summary}`);
 
-  // Categorías en orden de especificidad (más específicas primero)
+  // Contador de coincidencias para cada categoría
+  let scores = {
+    deporte: 0,
+    gastronomia: 0,
+    salud: 0,
+    viajes: 0,
+    medioambiente: 0,
+    politica: 0,
+    economia: 0,
+    sociedad: 0,
+    cultura: 0,
+    tecnologia: 0,
+    internacional: 0
+  };
 
-  // DEPORTE (detectar primero para evitar confusiones)
-  if (text.includes("futbol") || text.includes("futbolista") || text.includes("partido") || text.includes("gol") || text.includes("equipo") || text.includes("liga") || text.includes("campeonato") || text.includes("jugador") || text.includes("entrenador") || text.includes("tenis") || text.includes("basquet") || text.includes("voley") || text.includes("baloncesto") || text.includes("rugby") || text.includes("ciclismo") || text.includes("natacion") || text.includes("atletismo") || text.includes("boxeo") || text.includes("lucha libre") || text.includes("beisbol") || text.includes("boca") || text.includes("river") || text.includes("independiente") || text.includes("san lorenzo") || text.includes("racing") || text.includes("guardameta") || text.includes("portero") || text.includes("arquero") || text.includes("mundial") || text.includes("copa del mundo") || text.includes("europeo") || text.includes("libertadores") || text.includes("super copa") || text.includes("defensor") || text.includes("delantero") || text.includes("mediocampista")) return "deporte";
+  // DEPORTE - palabras muy específicas
+  if (text.match(/\b(futbol|futbolista|partido|gol|equipo deportivo|liga|campeonato|jugador|entrenador|tenis|basquet|voley|baloncesto|rugby|ciclismo|natacion|atletismo|boxeo|lucha libre|beisbol)\b/)) scores.deporte += 3;
+  if (text.match(/\b(boca|river|independiente|san lorenzo|racing)\b/)) scores.deporte += 2;
+  if (text.match(/\b(guardameta|portero|arquero|delantero|mediocampista|defensor)\b/)) scores.deporte += 2;
+  if (text.match(/\b(mundial|copa del mundo|europeo|libertadores|super copa|torneo|campeon)\b/)) scores.deporte += 2;
 
-  // GASTRONOMÍA
-  if (text.includes("gastronomia") || text.includes("restaurante") || text.includes("chef") || text.includes("receta") || text.includes("cocina") || text.includes("comida") || text.includes("plato") || text.includes("cocinero") || text.includes("buen comer") || text.includes("gastronomico") || text.includes("menu") || text.includes("comedor")) return "gastronomía";
+  // GASTRONOMÍA - palabras muy específicas
+  if (text.match(/\b(gastronomia|restaurante|chef|receta|cocina profesional|cocinero|menu|plato gourmet|michelin|buen comer)\b/)) scores.gastronomia += 3;
+  if (text.includes("gastronomico")) scores.gastronomia += 2;
 
-  // SALUD
-  if (text.includes("salud") || text.includes("medico") || text.includes("doctor") || text.includes("hospital") || text.includes("enfermedad") || text.includes("coronavirus") || text.includes("covid") || text.includes("vacuna") || text.includes("medicamento") || text.includes("ejercicio") || text.includes("nutricion") || text.includes("dieta")) return "salud";
+  // SALUD - palabras médicas específicas
+  if (text.match(/\b(salud|medico|doctor|hospital|enfermedad|coronavirus|covid|vacuna|medicamento|virus|epidemia|pandemia)\b/)) scores.salud += 3;
+  if (text.match(/\b(nutricion|dieta|ejercicio fisico|bienestar)\b/)) scores.salud += 2;
 
-  // VIAJES
-  if (text.includes("viajes") || text.includes("turismo") || text.includes("destino") || text.includes("hotel") || text.includes("turistico") || text.includes("vacaciones") || text.includes("playa") || text.includes("montaña") || text.includes("aeropuerto") || text.includes("pasaje")) return "viajes";
+  // VIAJES Y TURISMO
+  if (text.match(/\b(viajes|turismo|destino|hotel|resort|turistico|vacaciones|playa|montaña|aeropuerto)\b/)) scores.viajes += 3;
+  if (text.includes("pasaje")) scores.viajes += 1;
 
-  // MEDIOAMBIENTE
-  if (text.includes("medioambiente") || text.includes("clima") || text.includes("calentamiento global") || text.includes("contaminacion") || text.includes("ecologia") || text.includes("naturaleza") || text.includes("bosque") || text.includes("ocean") || text.includes("sostenible") || text.includes("verde") || text.includes("lluvia") || text.includes("tormenta") || text.includes("bloqueo atmosferico") || text.includes("frente frio") || text.includes("niebla") || text.includes("granizo") || text.includes("nieve") || text.includes("sequia") || text.includes("inundacion") || text.includes("temperatura") || text.includes("humedad") || text.includes("meteorologia") || text.includes("presion atmosferica") || text.includes("viento") || text.includes("fenomeno climatico")) return "medioambiente";
+  // MEDIOAMBIENTE - palabras muy específicas
+  if (text.match(/\b(medioambiente|clima|calentamiento global|contaminacion|ecologia|cambio climatico)\b/)) scores.medioambiente += 3;
+  if (text.match(/\b(lluvia|tormenta|bloqueo atmosferico|frente frio|niebla|granizo|nieve|sequia|inundacion|meteoro|fenomeno climatico)\b/)) scores.medioambiente += 2;
+  if (text.match(/\b(temperatura|presion atmosferica|humedad|viento|sustentable|verde|bosque|ocean)\b/)) scores.medioambiente += 1;
 
-  if (text.includes("politica") || text.includes("gobierno") || text.includes("presidente") || text.includes("elecciones") || text.includes("ministro") || text.includes("congreso") || text.includes("ley") || text.includes("diputado") || text.includes("senador") || text.includes("guerra") || text.includes("conflicto") || text.includes("iran") || text.includes("israel") || text.includes("palestina") || text.includes("ucrania") || text.includes("rusia")) return "política";
+  // POLÍTICA - muy específico
+  if (text.match(/\b(politica|gobierno|presidente|elecciones|ministro|congreso|ley|diputado|senador|voto|electoral)\b/)) scores.politica += 3;
+  if (text.match(/\b(guerra|conflicto|tratado|diplomacia|negociacion)\b/)) scores.politica += 2;
+  if (text.match(/\b(iran|israel|palestina|ucrania|rusia|siria|gaza|occidente)\b/)) scores.politica += 2;
 
-  if (text.includes("dolar") || text.includes("inflacion") || text.includes("mercados") || text.includes("economia") || text.includes("empresas") || text.includes("inversiones") || text.includes("fmi") || text.includes("banco central") || text.includes("bolsa")) return "economía";
+  // ECONOMÍA
+  if (text.match(/\b(economia|dolar|inflacion|mercados|empresas|inversiones|fmi|banco central|bolsa|accion|mercado financiero|negocios)\b/)) scores.economia += 3;
+  if (text.match(/\b(comercio|exportacion|importacion|arancel|impuesto|tributario)\b/)) scores.economia += 2;
 
-  if (text.includes("sociedad") || text.includes("educacion") || text.includes("escuela") || text.includes("universidad") || text.includes("estudiante") || text.includes("profesor") || text.includes("social") || text.includes("derechos") || text.includes("comunidad")) return "sociedad";
+  // SOCIEDAD Y EDUCACIÓN
+  if (text.match(/\b(sociedad|educacion|escuela|universidad|estudiante|profesor|docente|academico|social|derechos|comunidad|igualdad|justicia)\b/)) scores.sociedad += 3;
+  if (text.match(/\b(genero|feminismo|discriminacion|inclusion)\b/)) scores.sociedad += 2;
 
-  if (text.includes("tecnologia") || text.includes("internet") || text.includes("ia") || text.includes("software") || text.includes("apple") || text.includes("google") || text.includes("inteligencia artificial") || text.includes("espacio") || text.includes("nasa") || text.includes("computadora") || text.includes("codigo") || text.includes("programacion")) return "tecnología";
+  // CULTURA - palabras muy específicas
+  if (text.match(/\b(cultura|arte|cine|espectaculo|coreografo|director|actor|actriz|pelicula)\b/)) scores.cultura += 3;
+  if (text.match(/\b(musica|concierto|orquesta|compositor|musico|sinfonica)\b/)) scores.cultura += 2;
+  if (text.match(/\b(historia|teatro|literatura|pintura|escultura|galeria|museo|patrimonio)\b/)) scores.cultura += 2;
 
-  if (text.includes("cultura") || text.includes("arte") || text.includes("cine") || text.includes("musica") || text.includes("historia") || text.includes("teatro") || text.includes("literatura") || text.includes("pintura") || text.includes("escultura")) return "cultura";
+  // TECNOLOGÍA - palabras muy específicas (ÚLTIMO para no confundir)
+  if (text.match(/\b(tecnologia|internet|ia|inteligencia artificial|software|hardware|computadora|codigo|programacion|algoritmo|iot|blockchain|crypto|metaverso)\b/)) scores.tecnologia += 3;
+  if (text.match(/\b(apple|google|microsoft|meta|amazon|tesla|startup|app|smartphone|iphone)\b/)) scores.tecnologia += 2;
+  if (text.match(/\b(espacio|nasa|satelite|astronauta|cohete|astronomia|universo|planeta)\b/)) scores.tecnologia += 2;
 
-  return defaultCategory;
+  // INTERNACIONAL - países y referencias globales
+  if (text.match(/\b(internacional|global|mundial|paises|europa|america|asia|africa|oceania)\b/)) scores.internacional += 1;
+  if (text.match(/\b(nuevo york|los angeles|londres|paris|tokio|sydney|mexico|colombia|brasil|peru|chile)\b/)) scores.internacional += 1;
+
+  // Encontrar la categoría con mayor puntuación
+  let maxScore = 0;
+  let selectedCategory = defaultCategory;
+
+  for (const [category, score] of Object.entries(scores)) {
+    if (score > maxScore) {
+      maxScore = score;
+      selectedCategory = category;
+    }
+  }
+
+  // Si no hay coincidencias con puntuación, usar default
+  if (maxScore === 0) {
+    return defaultCategory;
+  }
+
+  return selectedCategory;
 }
 
 export function extractImageUrl(item: any): string | undefined {
