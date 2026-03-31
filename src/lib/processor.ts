@@ -1,4 +1,4 @@
-import { FORBIDDEN_WORDS, CATEGORIES, type NewsItem } from './config';
+import { FORBIDDEN_WORDS, GOSSIP_WORDS, CATEGORIES, type NewsItem } from './config';
 
 function normalizeText(text: string): string {
   if (!text) return "";
@@ -9,26 +9,32 @@ function normalizeText(text: string): string {
 // 1 & 2. FILTRADO Y DETECCIÓN SENSIBLE
 // ---------------------------------------------------------
 const forbiddenNormalized = FORBIDDEN_WORDS.map(normalizeText);
+const gossipNormalized = GOSSIP_WORDS.map(normalizeText);
 
 // Semantic/Contextual trigger phrases that imply violence/crime
 const suspiciousPhrases = [
-  "a los tiros", "ingreso a los tiros", "a punta de pistola", 
-  "abuso sexual", "ajuste de cuentas", "arma blanca", "arma de fuego", 
-  "ataque armado", "atentado", "bala", "balacera", "brutal golpiza", 
-  "cadaver", "cartel", "crimen", "delincuencia", "disparo", 
-  "doble homicidio", "femicidio", "fuego cruzado", "gatillo", 
-  "golpes", "herido de gravedad", "homicidio", "infarto", "lesiones", 
-  "mato", "matanza", "muerte", "muerto", "mutilado", "narcotrafico", 
-  "punalada", "robo", "sangre", "secuestro", "sicario", "terrorismo", 
+  "a los tiros", "ingreso a los tiros", "a punta de pistola",
+  "abuso sexual", "ajuste de cuentas", "arma blanca", "arma de fuego",
+  "ataque armado", "atentado", "bala", "balacera", "brutal golpiza",
+  "cadaver", "cartel", "crimen", "delincuencia", "disparo",
+  "doble homicidio", "femicidio", "fuego cruzado", "gatillo",
+  "golpes", "herido de gravedad", "homicidio", "infarto", "lesiones",
+  "mato", "matanza", "muerte", "muerto", "mutilado", "narcotrafico",
+  "punalada", "robo", "sangre", "secuestro", "sicario", "terrorismo",
   "tragedia", "violencia", "violacion", "ataque", "macabro", "horror",
   "siniestro vial", "accidente fatal", "hallazgo", "hallaron cuerpo"
 ].map(normalizeText);
 
 export function isContentAllowed(title: string, content: string): boolean {
   const combinedText = normalizeText(`${title} ${content}`);
-  
-  // Exact forbidden words
+
+  // Exact forbidden words (violence/crime)
   for (const word of forbiddenNormalized) {
+    if (combinedText.includes(word)) return false;
+  }
+
+  // Gossip/Entertainment words (farándula)
+  for (const word of gossipNormalized) {
     if (combinedText.includes(word)) return false;
   }
 
@@ -36,8 +42,8 @@ export function isContentAllowed(title: string, content: string): boolean {
   for (const phrase of suspiciousPhrases) {
     if (combinedText.includes(phrase)) return false;
   }
-  
-  return true; // No violence detected
+
+  return true; // No violence or gossip detected
 }
 
 // ---------------------------------------------------------
