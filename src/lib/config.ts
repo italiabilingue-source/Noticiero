@@ -46,10 +46,10 @@ export const FORBIDDEN_WORDS = [
 
 // Entertainment/Celebrity gossip words to filter out
 export const GOSSIP_WORDS = [
-  "famoso", "actriz", "actor", "telenovela", "reality", "influencer", "youtube", "instagram", "tiktok", "cantante", "música", "concierto", "gossip", "chisme", "divorcio", "relación", "novio", "novia", "boda", "pareja", "celebridad", "famosa", "farándula", "espectáculos", "entretenimiento", "videoclip", "disco", "artista", "estrella de cine", "hollywood"
+  "famoso", "actriz", "actor", "telenovela", "reality", "influencer", "youtube", "instagram", "tiktok", "cantante", "música", "concierto", "gossip", "chisme", "divorcio", "relación", "novio", "novia", "boda", "pareja", "celebridad", "famosa", "farándula", "espectáculos", "entretenimiento", "videoclip", "disco", "artista", "estrella de cine", "hollywood", "reality show", "gran hermano", "casa de los famosos", "survivor", "el bachelor", "amor a ciegas", "love is blind", "repechaje", "eliminado", "gala", "tenista famoso", "futbolista novia", "juego de azar"
 ];
 
-export const CATEGORIES = ["política", "economía", "sociedad", "tecnología", "cultura", "internacional"];
+export const CATEGORIES = ["política", "economía", "sociedad", "tecnología", "cultura", "deporte", "gastronomía", "salud", "viajes", "medioambiente", "internacional"];
 
 export interface NewsItem {
   id: string;

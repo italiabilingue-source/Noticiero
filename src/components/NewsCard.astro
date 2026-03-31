@@ -54,19 +54,22 @@ const imageUrl = article.imageUrl || fallbacks[article.category] || fallbacks['i
     </div>
   </a>
   <div class="flex-1 flex flex-col p-5">
-    <div class="flex items-center text-xs text-gray-500 mb-2 space-x-2">
-      <span class="font-medium text-[#CD212A]">{article.source}</span>
+    <div class="flex items-center text-xs text-gray-500 mb-3 space-x-2">
+      <span class="font-medium text-[#CD212A] uppercase tracking-wider">{article.source}</span>
       <span>•</span>
       <time datetime={article.pubDate}>{formattedDate}</time>
     </div>
-    
-    <a href={article.link} target="_blank" rel="noopener noreferrer" class="block flex-1 group">
-      <h3 class="text-xl font-serif font-bold text-gray-900 group-hover:text-[#CD212A] transition-colors leading-tight mb-3 line-clamp-3">
+
+    <a href={article.link} target="_blank" rel="noopener noreferrer" class="block flex-1 group flex flex-col">
+      <h3 class="text-lg font-serif font-bold text-gray-900 group-hover:text-[#CD212A] transition-colors leading-snug mb-3 line-clamp-3 min-h-[60px]">
         {article.title}
       </h3>
-      <p class="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+      <p class="text-sm text-gray-700 leading-relaxed flex-1 line-clamp-4">
         {article.summary}
       </p>
+      <div class="mt-4 pt-3 border-t border-gray-100 text-xs font-medium text-[#008C45] uppercase tracking-wider hover:text-[#CD212A] transition-colors">
+        Leer más →
+      </div>
     </a>
   </div>
 </article>

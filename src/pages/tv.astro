@@ -5,7 +5,11 @@ import { getSettings } from '../lib/config';
 
 // 1. Obtener Datos
 const allNews = await getNews();
-const tvNews = allNews.slice(0, 15);
+// Filtrar solo noticias con contenido suficiente para TV (mínimo 120 caracteres)
+// Usar todas las disponibles del día para que rote continuamente
+const tvNews = allNews
+  .filter(news => news.summary && news.summary.trim().length >= 120)
+  .slice(0, 50); // Aumentado a 50 noticias para rotación continua
 
 const settings = await getSettings();
 const ytId = getYoutubeId(settings.youtubeUrl);
@@ -20,7 +24,7 @@ function getYoutubeId(url: string) {
 // Transformación Automática Inteligente de Títulos
 function formatTVTitle(title: string): string {
     let clean = title;
-    
+
     // Si tiene un patrón de partido, intenta extraerlo limpio (ej. Argentina vs. Zambia)
     if (clean.includes("vs.")) {
         const teams = clean.match(/([A-Z][a-zA-Z\s]+)\s+vs\.?\s+([A-Z][a-zA-Z\s]+)/i);
@@ -31,7 +35,7 @@ function formatTVTitle(title: string): string {
     if (clean.includes(",") && clean.length > 60) {
         clean = clean.split(",")[0];
     }
-    
+
     // Regla: Si hay dos puntos, a veces lo importante es lo primero o el resumen
     if (clean.includes(":") && clean.length > 70) {
         const parts = clean.split(":");
@@ -41,21 +45,40 @@ function formatTVTitle(title: string): string {
     return clean.trim();
 }
 
+// Limpiar y formatear texto para TV
+function cleanTVText(text: string): string {
+    let clean = text;
+
+    // Remover HTML tags
+    clean = clean.replace(/<[^>]*>?/gm, '');
+
+    // Remover líneas vacías múltiples
+    clean = clean.replace(/\n\n+/g, '\n');
+
+    // Remover espacios extras
+    clean = clean.replace(/\s+/g, ' ').trim();
+
+    return clean;
+}
+
 const processedForTv = tvNews.map((item, index) => {
     // Usar el texto largo para hacer teleprompter real
-    const fullText = (item.contentSnippet && item.contentSnippet.length > item.summary.length) 
-                     ? item.contentSnippet.trim() 
+    const fullText = (item.contentSnippet && item.contentSnippet.length > item.summary.length)
+                     ? item.contentSnippet.trim()
                      : item.summary.trim();
-    
-    // Cálculo Dinámico Basado en Palabras (0.35s - 0.4s por palabra)
-    const wordsCount = fullText.split(/\s+/).length + formatTVTitle(item.title).split(/\s+/).length;
-    let dur = Math.max(10000, wordsCount * 400); // 10s min, 0.4s por palabra
-    if (dur > 35000) dur = 35000; // Cap a 35s max para no aburrir a nadie
-    
-    return { 
-        ...item, 
+
+    // Limpiar el texto para mejor legibilidad
+    const cleanedText = cleanTVText(fullText);
+
+    // Cálculo Dinámico Basado en Palabras - MÁS TIEMPO PARA LEER CÓMODAMENTE
+    const wordsCount = cleanedText.split(/\s+/).length + formatTVTitle(item.title).split(/\s+/).length;
+    let dur = Math.max(15000, wordsCount * 500); // 15s min, 0.5s por palabra para lectura cómoda
+    if (dur > 45000) dur = 45000; // Cap a 45s max
+
+    return {
+        ...item,
         tvTitle: formatTVTitle(item.title),
-        fullText: fullText,
+        fullText: cleanedText,
         duration: dur
     };
 });
@@ -95,7 +118,7 @@ const processedForTv = tvNews.map((item, index) => {
                 </div>
 
                 {/* TÍTULO LIMPIO Y CORTO */}
-                <h1 class="text-5xl md:text-[4.5rem] font-serif font-black text-white leading-tight drop-shadow-2xl line-clamp-2 mb-6 opacity-0 title-anim max-w-6xl">
+                <h1 class="text-6xl md:text-[5rem] font-serif font-black text-white leading-tight drop-shadow-2xl line-clamp-2 mb-8 opacity-0 title-anim max-w-6xl">
                    {article.tvTitle}
                 </h1>
 
@@ -106,9 +129,9 @@ const processedForTv = tvNews.map((item, index) => {
 
                 {/* SCROLL SUAVE (TELEPROMPTER) PARA CONTENIDO LARGO */}
                 <div class="bg-black/50 p-10 px-12 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative opacity-0 content-anim max-w-5xl">
-                    <div class="overflow-hidden h-[320px] relative prompter-mask">
+                    <div class="overflow-hidden h-[380px] relative prompter-mask">
                         <div class="prompter-content">
-                            <p class="text-[2.3rem] text-gray-100 font-light leading-[1.8] tracking-wide">
+                            <p class="text-[2.5rem] text-gray-50 font-light leading-[1.9] tracking-normal">
                                {article.fullText}
                             </p>
                         </div>
@@ -149,7 +172,7 @@ const processedForTv = tvNews.map((item, index) => {
     {/* Marca Header */}
     <div class="absolute top-10 left-12 flex items-center space-x-6 z-30">
         <div class="text-3xl font-serif font-black text-white drop-shadow-md tracking-tighter">
-            NOTICIAS<span class="text-[#008C45]">.</span>GLOBAL
+            NOTICIAS<span class="text-[#008C45]">.</span>BILI
         </div>
         <div class="w-1.5 h-1.5 rounded-full bg-white/30"></div>
         <div id="tv-clock" class="text-3xl font-mono font-medium text-white tracking-wider tabular-nums drop-shadow-md">

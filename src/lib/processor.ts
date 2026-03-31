@@ -25,6 +25,21 @@ const suspiciousPhrases = [
   "siniestro vial", "accidente fatal", "hallazgo", "hallaron cuerpo"
 ].map(normalizeText);
 
+// Palabras que indican noticias genéricas/vacías sin contenido real
+const genericPhrases = [
+  "cobertura en tiempo real",
+  "actualización en directo",
+  "se actualizará",
+  "últimas novedades",
+  "información en desarrollo",
+  "actualizaremos cuando",
+  "más información próximamente",
+  "sigue aquí para",
+  "permanece atento",
+  "en vivo",
+  "live updates"
+].map(normalizeText);
+
 export function isContentAllowed(title: string, content: string): boolean {
   const combinedText = normalizeText(`${title} ${content}`);
 
@@ -43,7 +58,12 @@ export function isContentAllowed(title: string, content: string): boolean {
     if (combinedText.includes(phrase)) return false;
   }
 
-  return true; // No violence or gossip detected
+  // Generic/empty news phrases (no real content)
+  for (const phrase of genericPhrases) {
+    if (combinedText.includes(phrase)) return false;
+  }
+
+  return true; // No violence, gossip, or empty content detected
 }
 
 // ---------------------------------------------------------
@@ -122,13 +142,34 @@ function getDisplayMode(summaryLength: number): 'short' | 'medium' | 'long' {
 // ---------------------------------------------------------
 export function categorizeContent(title: string, summary: string, defaultCategory: string): string {
   const text = normalizeText(`${title} ${summary}`);
-  
-  if (text.includes("gobierno") || text.includes("politica") || text.includes("presidente") || text.includes("elecciones") || text.includes("ministro") || text.includes("congreso") || text.includes("ley")) return "política";
-  if (text.includes("dolar") || text.includes("inflacion") || text.includes("mercados") || text.includes("economia") || text.includes("empresas") || text.includes("inversiones") || text.includes("fmi")) return "economía";
-  if (text.includes("sociedad") || text.includes("educacion") || text.includes("salud") || text.includes("clima") || text.includes("social")) return "sociedad";
-  if (text.includes("tecnologia") || text.includes("internet") || text.includes("ia") || text.includes("software") || text.includes("apple") || text.includes("google") || text.includes("inteligencia artificial") || text.includes("espacio")) return "tecnología";
-  if (text.includes("cultura") || text.includes("arte") || text.includes("cine") || text.includes("musica") || text.includes("historia") || text.includes("teatro") || text.includes("literatura")) return "cultura";
-  
+
+  // Categorías en orden de especificidad (más específicas primero)
+
+  // DEPORTE (detectar primero para evitar confusiones)
+  if (text.includes("futbol") || text.includes("futbolista") || text.includes("partido") || text.includes("gol") || text.includes("equipo") || text.includes("liga") || text.includes("campeonato") || text.includes("jugador") || text.includes("entrenador") || text.includes("tenis") || text.includes("basquet") || text.includes("voley") || text.includes("baloncesto") || text.includes("rugby") || text.includes("ciclismo") || text.includes("natacion") || text.includes("atletismo") || text.includes("boxeo") || text.includes("lucha libre") || text.includes("beisbol") || text.includes("boca") || text.includes("river") || text.includes("independiente") || text.includes("san lorenzo") || text.includes("racing") || text.includes("guardameta") || text.includes("portero") || text.includes("arquero") || text.includes("mundial") || text.includes("copa del mundo") || text.includes("europeo") || text.includes("libertadores") || text.includes("super copa") || text.includes("defensor") || text.includes("delantero") || text.includes("mediocampista")) return "deporte";
+
+  // GASTRONOMÍA
+  if (text.includes("gastronomia") || text.includes("restaurante") || text.includes("chef") || text.includes("receta") || text.includes("cocina") || text.includes("comida") || text.includes("plato") || text.includes("cocinero") || text.includes("buen comer") || text.includes("gastronomico") || text.includes("menu") || text.includes("comedor")) return "gastronomía";
+
+  // SALUD
+  if (text.includes("salud") || text.includes("medico") || text.includes("doctor") || text.includes("hospital") || text.includes("enfermedad") || text.includes("coronavirus") || text.includes("covid") || text.includes("vacuna") || text.includes("medicamento") || text.includes("ejercicio") || text.includes("nutricion") || text.includes("dieta")) return "salud";
+
+  // VIAJES
+  if (text.includes("viajes") || text.includes("turismo") || text.includes("destino") || text.includes("hotel") || text.includes("turistico") || text.includes("vacaciones") || text.includes("playa") || text.includes("montaña") || text.includes("aeropuerto") || text.includes("pasaje")) return "viajes";
+
+  // MEDIOAMBIENTE
+  if (text.includes("medioambiente") || text.includes("clima") || text.includes("calentamiento global") || text.includes("contaminacion") || text.includes("ecologia") || text.includes("naturaleza") || text.includes("bosque") || text.includes("ocean") || text.includes("sostenible") || text.includes("verde")) return "medioambiente";
+
+  if (text.includes("politica") || text.includes("gobierno") || text.includes("presidente") || text.includes("elecciones") || text.includes("ministro") || text.includes("congreso") || text.includes("ley") || text.includes("diputado") || text.includes("senador") || text.includes("guerra") || text.includes("conflicto") || text.includes("iran") || text.includes("israel") || text.includes("palestina") || text.includes("ucrania") || text.includes("rusia")) return "política";
+
+  if (text.includes("dolar") || text.includes("inflacion") || text.includes("mercados") || text.includes("economia") || text.includes("empresas") || text.includes("inversiones") || text.includes("fmi") || text.includes("banco central") || text.includes("bolsa")) return "economía";
+
+  if (text.includes("sociedad") || text.includes("educacion") || text.includes("escuela") || text.includes("universidad") || text.includes("estudiante") || text.includes("profesor") || text.includes("social") || text.includes("derechos") || text.includes("comunidad")) return "sociedad";
+
+  if (text.includes("tecnologia") || text.includes("internet") || text.includes("ia") || text.includes("software") || text.includes("apple") || text.includes("google") || text.includes("inteligencia artificial") || text.includes("espacio") || text.includes("nasa") || text.includes("computadora") || text.includes("codigo") || text.includes("programacion")) return "tecnología";
+
+  if (text.includes("cultura") || text.includes("arte") || text.includes("cine") || text.includes("musica") || text.includes("historia") || text.includes("teatro") || text.includes("literatura") || text.includes("pintura") || text.includes("escultura")) return "cultura";
+
   return defaultCategory;
 }
 
@@ -144,11 +185,20 @@ export function extractImageUrl(item: any): string | undefined {
 }
 
 // ---------------------------------------------------------
-// 7. PIPELINE PRINCIPAL 
+// 7. PIPELINE PRINCIPAL
 // ---------------------------------------------------------
 function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem | null {
   const rawTitle = item.title || '';
   const rawContent = item.contentSnippet || item.content || '';
+
+  // 0. VALIDACIÓN MÍNIMA: Si no hay título o contenido es insuficiente, descartar
+  if (!rawTitle || rawTitle.trim().length < 10) {
+    return null; // DISCARD - Título muy corto
+  }
+
+  if (!rawContent || rawContent.trim().length < 30) {
+    return null; // DISCARD - Sin suficiente contenido
+  }
 
   // 1 & 2: Validar si es seguro
   if (!isContentAllowed(rawTitle, rawContent)) {
@@ -161,13 +211,18 @@ function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem |
   // 3 & 4: Resumen automático neutral y limpio
   const cleanSummary = summarizeSnippet(rawContent);
 
+  // Si el resumen resultó muy corto después de limpieza, descartar
+  if (cleanSummary.length < 30) {
+    return null; // DISCARD - Resumen insuficiente después de limpieza
+  }
+
   // 6: Decisión visual
   const mode = getDisplayMode(cleanSummary.length);
 
   // Categoría final e imagen
   const category = categorizeContent(cleanTitle, cleanSummary, feedCategory);
   const imageUrl = extractImageUrl(item);
-  
+
   // Fallback IDs robustness
   const uniqueId = Array.isArray(item.guid) ? item.guid[0] : (item.guid || item.id || item.link || Math.random().toString(36).substring(7));
 
