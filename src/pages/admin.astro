@@ -13,31 +13,43 @@ if (!isAuthenticated) {
 }
 
 let success = false;
+let error = '';
 let settings = await getSettings();
 
 // Manejar guardado de configuración
 if (Astro.request.method === 'POST') {
-  const formData = await Astro.request.formData();
+  try {
+    const formData = await Astro.request.formData();
+    const currentSettings = await getSettings();
 
-  const currentSettings = await getSettings();
-  const updatedFeeds = currentSettings.feeds.map(f => {
-    return {
-      ...f,
-      enabled: formData.get(`enabled_${f.id}`) === 'on',
-      url: (formData.get(`url_${f.id}`) as string) || f.url
-    };
-  });
+    // Procesar feeds
+    const updatedFeeds = currentSettings.feeds.map(f => {
+      const isEnabled = formData.get(`enabled_${f.id}`);
+      const newUrl = formData.get(`url_${f.id}`);
 
-  const youtubeUrl = (formData.get('youtubeUrl') as string) || '';
+      return {
+        ...f,
+        enabled: isEnabled === 'on' || isEnabled === true,
+        url: (newUrl as string) || f.url
+      };
+    });
 
-  await saveSettings({
-    feeds: updatedFeeds,
-    youtubeUrl: youtubeUrl
-  });
+    // Obtener URL de YouTube
+    const youtubeUrl = (formData.get('youtubeUrl') as string) || '';
 
-  // Recargar settings y mostrar mensaje de éxito
-  settings = await getSettings();
-  success = true;
+    // Guardar configuración
+    await saveSettings({
+      feeds: updatedFeeds,
+      youtubeUrl: youtubeUrl
+    });
+
+    // Recargar settings y mostrar mensaje de éxito
+    settings = await getSettings();
+    success = true;
+  } catch (e) {
+    error = `Error al guardar: ${e instanceof Error ? e.message : 'Error desconocido'}`;
+    console.error('Admin save error:', e);
+  }
 }
 ---
 
@@ -63,6 +75,12 @@ if (Astro.request.method === 'POST') {
         {success && (
           <div class="mx-6 mt-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl relative animate-pulse" role="alert">
             <span class="block sm:inline font-bold">✓ Configuración actualizada con éxito.</span>
+          </div>
+        )}
+
+        {error && (
+          <div class="mx-6 mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl" role="alert">
+            <span class="block sm:inline font-bold">✗ {error}</span>
           </div>
         )}
 

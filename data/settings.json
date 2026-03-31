@@ -1,0 +1,19 @@
+{
+  "feeds": [
+    {
+      "id": "lanacion",
+      "name": "La Nación",
+      "url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/?outputType=xml",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "repubblica",
+      "name": "La Repubblica",
+      "url": "https://www.repubblica.it/rss/homepage/rss2.0.xml",
+      "country": "IT",
+      "enabled": true
+    }
+  ],
+  "youtubeUrl": "https://www.youtube.com/watch?v=MK0sy1y8mJs"
+}
