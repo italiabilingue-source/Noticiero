@@ -1,7 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+// En Vercel (serverless), usar /tmp que es escribible
+// En desarrollo, usar ./data
+const isVercel = process.env.VERCEL === '1';
+const DATA_DIR = isVercel
+  ? '/tmp/noticias-bili'
+  : path.resolve(process.cwd(), 'data');
 const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
 
 export interface FeedSetting {
