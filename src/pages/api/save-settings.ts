@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
 import { getSettings, saveSettings } from '../../lib/config';
 
-export const POST: APIRoute = async ({ request, redirect }) => {
+export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   // Validar que el usuario tiene sesión activa
-  const cookies = request.headers.get('cookie') || '';
-  if (!cookies.includes('admin_session=true')) {
+  const sessionCookie = cookies.get('admin_session');
+
+  if (!sessionCookie || sessionCookie.value !== 'true') {
     return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 });
   }
 
