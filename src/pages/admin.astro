@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
-import { getSettings } from '../lib/config';
+import { getSettings, saveSettings } from '../lib/config';
 
 // Verificar autenticación
 const cookies = Astro.request.headers.get('cookie') || '';
@@ -12,9 +12,33 @@ if (!isAuthenticated) {
   return Astro.redirect('/admin-login?redirect=/admin');
 }
 
-const settings = await getSettings();
-const url = new URL(Astro.request.url);
-const success = url.searchParams.has('success');
+let success = false;
+let settings = await getSettings();
+
+// Manejar guardado de configuración
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+
+  const currentSettings = await getSettings();
+  const updatedFeeds = currentSettings.feeds.map(f => {
+    return {
+      ...f,
+      enabled: formData.get(`enabled_${f.id}`) === 'on',
+      url: (formData.get(`url_${f.id}`) as string) || f.url
+    };
+  });
+
+  const youtubeUrl = (formData.get('youtubeUrl') as string) || '';
+
+  await saveSettings({
+    feeds: updatedFeeds,
+    youtubeUrl: youtubeUrl
+  });
+
+  // Recargar settings y mostrar mensaje de éxito
+  settings = await getSettings();
+  success = true;
+}
 ---
 
 <Layout title="Administración">
@@ -42,7 +66,7 @@ const success = url.searchParams.has('success');
           </div>
         )}
 
-        <form action="/api/save-settings" method="POST" class="p-8 space-y-10">
+        <form method="POST" class="p-8 space-y-10">
 
           {/* NEWS PROVIDERS SECTION */}
           <section class="space-y-6">
