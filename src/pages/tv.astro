@@ -13,7 +13,7 @@ const tvNews = allNews
 
 const settings = await getSettings();
 const ytId = getYoutubeId(settings.youtubeUrl);
-const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&showinfo=0&autohide=1` : null;
+const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}?autoplay=1&mute=0&loop=1&playlist=${ytId}&controls=0&showinfo=0&autohide=1` : null;
 
 function getYoutubeId(url: string) {
     if (!url) return null;
