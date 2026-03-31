@@ -18,7 +18,7 @@ function getYoutubeId(url: string) {
 }
 
 const videoId = getYoutubeId(settings.youtubeUrl);
-const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&autohide=1` : null;
+const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&loop=1&playlist=${videoId}&controls=0&showinfo=0&autohide=1` : null;
 
 const currentPath = Astro.url.pathname;
 const isTvMode = currentPath === '/tv';
