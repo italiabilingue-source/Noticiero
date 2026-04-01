@@ -30,8 +30,27 @@ export async function getSettings(): Promise<SiteSettings> {
     // Default settings if file doesn't exist
     return {
       feeds: [
-        { id: 'lanacion', name: 'La Nación', url: 'https://www.lanacion.com.ar/arc/outboundfeeds/rss/?outputType=xml', country: 'AR', enabled: true },
-        { id: 'repubblica', name: 'La Repubblica', url: 'https://www.repubblica.it/rss/homepage/rss2.0.xml', country: 'IT', enabled: true }
+        // ARGENTINA - La Nación (específicas por categoría)
+        { id: 'lanacion_politica', name: 'La Nación - Política', url: 'https://www.lanacion.com.ar/politica/rss/', country: 'AR', enabled: true },
+        { id: 'lanacion_economia', name: 'La Nación - Economía', url: 'https://www.lanacion.com.ar/economia/rss/', country: 'AR', enabled: true },
+        { id: 'lanacion_tecnologia', name: 'La Nación - Tecnología', url: 'https://www.lanacion.com.ar/tecnologia/rss/', country: 'AR', enabled: true },
+        { id: 'lanacion_sociedad', name: 'La Nación - Sociedad', url: 'https://www.lanacion.com.ar/sociedad/rss/', country: 'AR', enabled: true },
+
+        // INTERNACIONAL - BBC
+        { id: 'bbc_world', name: 'BBC - World', url: 'http://feeds.bbci.co.uk/news/world/rss.xml', country: 'GB', enabled: true },
+        { id: 'bbc_tech', name: 'BBC - Technology', url: 'http://feeds.bbci.co.uk/news/technology/rss.xml', country: 'GB', enabled: true },
+
+        // INTERNACIONAL - Reuters
+        { id: 'reuters_world', name: 'Reuters - World', url: 'https://www.reutersagency.com/feed/?best-topics=world&post_type=best', country: 'US', enabled: true },
+        { id: 'reuters_business', name: 'Reuters - Business', url: 'https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best', country: 'US', enabled: true },
+
+        // ITALIA
+        { id: 'corriere', name: 'Corriere della Sera', url: 'https://xml2.corriereobjects.it/rss/homepage.xml', country: 'IT', enabled: true },
+        { id: 'repubblica', name: 'La Repubblica', url: 'https://www.repubblica.it/rss/homepage/rss2.0.xml', country: 'IT', enabled: true },
+
+        // TECNOLOGÍA (calidad alta)
+        { id: 'techcrunch', name: 'TechCrunch', url: 'https://techcrunch.com/feed/', country: 'US', enabled: true },
+        { id: 'theverge', name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', country: 'US', enabled: true }
       ],
       youtubeUrl: ''
     };
