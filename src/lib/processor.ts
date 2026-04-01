@@ -6,6 +6,87 @@ function normalizeText(text: string): string {
 }
 
 // ---------------------------------------------------------
+// ANTI-CLICKBAIT & INSTITUTIONAL CLEANING
+// ---------------------------------------------------------
+
+// Palabras de clickbait que indican exageración sensacionalista
+const clickbaitPatterns = [
+  "no vás a creer", "no podras creer", "impactante", "sorprendente", "revelado", "secret",
+  "confesó", "admitió", "choque", "caos", "desastre", "tragedia", "bomba", "escandaloso",
+  "escándalo", "increíble", "insólito", "asombroso", "inaudito", "lo que nadie", "nunca",
+  "jamás", "se viene", "viene fuerte", "fuerte", "brutal", "tremendo", "demoledor",
+  "arrasó", "arrasa", "conquista", "conquisto", "ganadoras", "ganador", "viral", "trending"
+].map(normalizeText);
+
+// Patrones de reescritura neutra
+const titlePatterns = [
+  { pattern: /^.*?:\s*/i, replacement: '' }, // Remover "País: Noticia"
+  { pattern: /\s*\[.*?\]\s*/g, replacement: ' ' }, // Remover [tags]
+  { pattern: /\s*\(.*?actualizad.*?\)\s*/gi, replacement: ' ' }, // Remover "(actualizado)"
+  { pattern: /\s+-\s+.{1,20}$/gi, replacement: '' }, // Remover sufijos pequeños
+  { pattern: /\s*\|\s*.{1,30}$/g, replacement: '' }, // Remover "| Más noticias"
+  { pattern: /\s{2,}/g, replacement: ' ' }, // Normalizar espacios
+];
+
+function removeClickbait(title: string, summary: string): { title: string; summary: string } {
+  let cleanTitle = title;
+  let cleanSummary = summary;
+
+  const combinedText = normalizeText(`${title} ${summary}`);
+
+  // Detectar si es clickbait
+  const isClickbait = clickbaitPatterns.some(word => combinedText.includes(word));
+
+  if (isClickbait) {
+    // Remover patrones de clickbait del título
+    cleanTitle = cleanTitle
+      .replace(/no vas a creer/gi, '')
+      .replace(/sorprendente:/gi, '')
+      .replace(/impactante:/gi, '')
+      .replace(/revelado:/gi, '')
+      .replace(/se viene/gi, '')
+      .replace(/\+/gi, 'y')
+      .trim();
+  }
+
+  // Aplicar patrones de limpieza
+  for (const { pattern, replacement } of titlePatterns) {
+    cleanTitle = cleanTitle.replace(pattern, replacement);
+  }
+
+  // Limitar y normalizar
+  cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
+
+  // Si quedó muy corto, usar el original limpio
+  if (cleanTitle.length < 10) {
+    cleanTitle = title.replace(/\s+/g, ' ').trim();
+  }
+
+  return { title: cleanTitle, summary: cleanSummary };
+}
+
+function institutionalizeTitle(title: string): string {
+  let clean = title;
+
+  // Remover MAYÚSCULAS exageradas (más de 3 palabras seguidas)
+  clean = clean.replace(/([A-Z]+\s+){3,}/g, (match) => {
+    return match.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  });
+
+  // Convertir a formato más neutro: Capital case
+  clean = clean.split(' ').map((word, idx) => {
+    if (idx === 0) return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    if (word.length <= 2) return word.toLowerCase();
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
+
+  // Remover "dice que", "según", "asegura" excesivos
+  clean = clean.replace(/^(dice que|según|asegura|afirma)\s+/i, '');
+
+  return clean;
+}
+
+// ---------------------------------------------------------
 // 1 & 2. FILTRADO Y DETECCIÓN SENSIBLE
 // ---------------------------------------------------------
 const forbiddenNormalized = FORBIDDEN_WORDS.map(normalizeText);
@@ -254,16 +335,22 @@ function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem |
     return null; // DISCARD - Sin suficiente contenido
   }
 
+  // NUEVO: Remover clickbait y reescribir
+  const { title: declickbaitTitle, summary: declickbaitSummary } = removeClickbait(rawTitle, rawContent);
+
+  // NUEVO: Institucionalizar el título
+  const institutionalTitle = institutionalizeTitle(declickbaitTitle);
+
   // 1 & 2: Validar si es seguro
-  if (!isContentAllowed(rawTitle, rawContent)) {
+  if (!isContentAllowed(institutionalTitle, declickbaitSummary)) {
     return null; // DISCARD - Violencia detectada o dudoso
   }
 
   // 4 & 5: Título limpio y normalizado
-  const cleanTitle = normalizeTitle(rawTitle);
+  const cleanTitle = normalizeTitle(institutionalTitle);
 
   // 3 & 4: Resumen automático neutral y limpio
-  const cleanSummary = summarizeSnippet(rawContent);
+  const cleanSummary = summarizeSnippet(declickbaitSummary);
 
   // Si el resumen resultó muy corto después de limpieza, descartar
   if (cleanSummary.length < 30) {
