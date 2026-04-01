@@ -223,8 +223,9 @@ function getDisplayMode(summaryLength: number): 'short' | 'medium' | 'long' {
 // ---------------------------------------------------------
 export function categorizeContent(title: string, summary: string, defaultCategory: string): string {
   const text = normalizeText(`${title} ${summary}`);
+  const titleText = normalizeText(title);
 
-  // Contador de coincidencias para cada categoría
+  // Sistema de scoring ponderado por categoría
   let scores = {
     deporte: 0,
     gastronomia: 0,
@@ -236,73 +237,119 @@ export function categorizeContent(title: string, summary: string, defaultCategor
     sociedad: 0,
     cultura: 0,
     tecnologia: 0,
-    internacional: 0
   };
 
-  // DEPORTE - palabras muy específicas
-  if (text.match(/\b(futbol|futbolista|partido|gol|equipo deportivo|liga|campeonato|jugador|entrenador|tenis|basquet|voley|baloncesto|rugby|ciclismo|natacion|atletismo|boxeo|lucha libre|beisbol)\b/)) scores.deporte += 3;
-  if (text.match(/\b(boca|river|independiente|san lorenzo|racing)\b/)) scores.deporte += 2;
-  if (text.match(/\b(guardameta|portero|arquero|delantero|mediocampista|defensor)\b/)) scores.deporte += 2;
-  if (text.match(/\b(mundial|copa del mundo|europeo|libertadores|super copa|torneo|campeon)\b/)) scores.deporte += 2;
+  // ============ DEPORTE (MÁXIMA PRIORIDAD CUANDO SE DETECTA) ============
+  // Palabras muy específicas de deporte
+  const sportTerms = ["futbol", "futbolista", "partido", "gol", "equipo deportivo", "jugador",
+    "entrenador", "tenis", "basquet", "voley", "baloncesto", "rugby", "ciclismo", "natacion",
+    "atletismo", "boxeo", "beisbol", "campeonato", "liga", "torneo", "competencia", "campeon"];
+  const sportTeams = ["boca", "river", "independiente", "san lorenzo", "racing", "estudiantes"];
+  const sportPositions = ["guardameta", "portero", "arquero", "delantero", "mediocampista", "defensor", "lateral"];
+  const sportEvents = ["mundial", "copa del mundo", "europeo", "libertadores", "super copa", "olimpiadas", "clasificatorios"];
 
-  // GASTRONOMÍA - palabras muy específicas
-  if (text.match(/\b(gastronomia|restaurante|chef|receta|cocina profesional|cocinero|menu|plato gourmet|michelin|buen comer)\b/)) scores.gastronomia += 3;
-  if (text.includes("gastronomico")) scores.gastronomia += 2;
+  // Scoring deporte
+  sportTerms.forEach(term => { if (text.includes(term)) scores.deporte += 5; });
+  sportTeams.forEach(team => { if (text.includes(team)) scores.deporte += 8; });
+  sportPositions.forEach(pos => { if (text.includes(pos)) scores.deporte += 4; });
+  sportEvents.forEach(event => { if (text.includes(event)) scores.deporte += 7; });
+  if (titleText.match(/vs\.?|vs|contra|championship|final/i)) scores.deporte += 3;
 
-  // SALUD - palabras médicas específicas
-  if (text.match(/\b(salud|medico|doctor|hospital|enfermedad|coronavirus|covid|vacuna|medicamento|virus|epidemia|pandemia)\b/)) scores.salud += 3;
-  if (text.match(/\b(nutricion|dieta|ejercicio fisico|bienestar)\b/)) scores.salud += 2;
+  // ============ POLÍTICA (ALTA PRIORIDAD) ============
+  const politicaTerms = ["politica", "gobierno", "presidente", "elecciones", "ministro", "congreso",
+    "ley", "diputado", "senador", "voto", "electoral", "reforma", "decreto", "parlamento"];
+  const conflictTerms = ["guerra", "conflicto", "tratado", "diplomacia", "negociacion", "acuerdo",
+    "iran", "israel", "palestina", "ucrania", "rusia", "siria", "gaza", "occidente", "china"];
 
-  // VIAJES Y TURISMO
-  if (text.match(/\b(viajes|turismo|destino|hotel|resort|turistico|vacaciones|playa|montaña|aeropuerto)\b/)) scores.viajes += 3;
-  if (text.includes("pasaje")) scores.viajes += 1;
+  politicaTerms.forEach(term => { if (text.includes(term)) scores.politica += 5; });
+  conflictTerms.forEach(term => { if (text.includes(term)) scores.politica += 6; });
 
-  // MEDIOAMBIENTE - palabras muy específicas
-  if (text.match(/\b(medioambiente|clima|calentamiento global|contaminacion|ecologia|cambio climatico)\b/)) scores.medioambiente += 3;
-  if (text.match(/\b(lluvia|tormenta|bloqueo atmosferico|frente frio|niebla|granizo|nieve|sequia|inundacion|meteoro|fenomeno climatico)\b/)) scores.medioambiente += 2;
-  if (text.match(/\b(temperatura|presion atmosferica|humedad|viento|sustentable|verde|bosque|ocean)\b/)) scores.medioambiente += 1;
+  // ============ ECONOMÍA ============
+  const economiaTerms = ["economia", "dolar", "inflacion", "mercados", "empresas", "inversiones",
+    "fmi", "banco central", "bolsa", "accion", "mercado financiero", "negocios", "comercio",
+    "exportacion", "importacion", "arancel", "impuesto", "tributario", "pib", "desempleo"];
 
-  // POLÍTICA - muy específico
-  if (text.match(/\b(politica|gobierno|presidente|elecciones|ministro|congreso|ley|diputado|senador|voto|electoral)\b/)) scores.politica += 3;
-  if (text.match(/\b(guerra|conflicto|tratado|diplomacia|negociacion)\b/)) scores.politica += 2;
-  if (text.match(/\b(iran|israel|palestina|ucrania|rusia|siria|gaza|occidente)\b/)) scores.politica += 2;
+  economiaTerms.forEach(term => { if (text.includes(term)) scores.economia += 5; });
+  if (titleText.match(/dolar|inflacion|bolsa|mercado/i)) scores.economia += 3;
 
-  // ECONOMÍA
-  if (text.match(/\b(economia|dolar|inflacion|mercados|empresas|inversiones|fmi|banco central|bolsa|accion|mercado financiero|negocios)\b/)) scores.economia += 3;
-  if (text.match(/\b(comercio|exportacion|importacion|arancel|impuesto|tributario)\b/)) scores.economia += 2;
+  // ============ TECNOLOGÍA (ESPECÍFICO) ============
+  const techTerms = ["tecnologia", "software", "hardware", "computadora", "codigo", "programacion",
+    "algoritmo", "iot", "blockchain", "crypto", "metaverso", "inteligencia artificial", "ia",
+    "internet", "app", "smartphone", "iphone", "android", "startup", "github"];
+  const techCompanies = ["apple", "google", "microsoft", "meta", "amazon", "tesla", "nvidia", "openai"];
+  const spaceTerms = ["espacio", "nasa", "satelite", "astronauta", "cohete", "astronomia", "universo", "planeta"];
 
-  // SOCIEDAD Y EDUCACIÓN
-  if (text.match(/\b(sociedad|educacion|escuela|universidad|estudiante|profesor|docente|academico|social|derechos|comunidad|igualdad|justicia)\b/)) scores.sociedad += 3;
-  if (text.match(/\b(genero|feminismo|discriminacion|inclusion)\b/)) scores.sociedad += 2;
+  techTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 5; });
+  techCompanies.forEach(term => { if (text.includes(term)) scores.tecnologia += 6; });
+  spaceTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 5; });
 
-  // CULTURA - palabras muy específicas
-  if (text.match(/\b(cultura|arte|cine|espectaculo|coreografo|director|actor|actriz|pelicula)\b/)) scores.cultura += 3;
-  if (text.match(/\b(musica|concierto|orquesta|compositor|musico|sinfonica)\b/)) scores.cultura += 2;
-  if (text.match(/\b(historia|teatro|literatura|pintura|escultura|galeria|museo|patrimonio)\b/)) scores.cultura += 2;
+  // ============ SALUD (MÉDICO Y ESPECÍFICO) ============
+  const healthTerms = ["salud", "medico", "doctor", "hospital", "enfermedad", "coronavirus",
+    "covid", "vacuna", "medicamento", "virus", "epidemia", "pandemia", "cancer", "diabetes",
+    "nutricion", "dieta", "ejercicio fisico", "bienestar", "psicologia", "mental"];
 
-  // TECNOLOGÍA - palabras muy específicas (ÚLTIMO para no confundir)
-  if (text.match(/\b(tecnologia|internet|ia|inteligencia artificial|software|hardware|computadora|codigo|programacion|algoritmo|iot|blockchain|crypto|metaverso)\b/)) scores.tecnologia += 3;
-  if (text.match(/\b(apple|google|microsoft|meta|amazon|tesla|startup|app|smartphone|iphone)\b/)) scores.tecnologia += 2;
-  if (text.match(/\b(espacio|nasa|satelite|astronauta|cohete|astronomia|universo|planeta)\b/)) scores.tecnologia += 2;
+  healthTerms.forEach(term => { if (text.includes(term)) scores.salud += 5; });
+  if (titleText.match(/salud|medico|hospital/i)) scores.salud += 3;
 
-  // INTERNACIONAL - países y referencias globales
-  if (text.match(/\b(internacional|global|mundial|paises|europa|america|asia|africa|oceania)\b/)) scores.internacional += 1;
-  if (text.match(/\b(nuevo york|los angeles|londres|paris|tokio|sydney|mexico|colombia|brasil|peru|chile)\b/)) scores.internacional += 1;
+  // ============ MEDIOAMBIENTE (CLIMA Y NATURALEZA) ============
+  const envTerms = ["clima", "calentamiento global", "contaminacion", "ecologia", "cambio climatico",
+    "sostenible", "verde", "bosque", "ocean", "lluvia", "tormenta", "niebla", "granizo", "nieve",
+    "sequia", "inundacion", "meteoro", "fenomeno climatico", "temperatura", "humedad", "viento"];
 
-  // Encontrar la categoría con mayor puntuación
-  let maxScore = 0;
-  let selectedCategory = defaultCategory;
+  envTerms.forEach(term => { if (text.includes(term)) scores.medioambiente += 4; });
+  if (titleText.match(/clima|lluvia|tormenta|bloqueo atmosferico/i)) scores.medioambiente += 3;
 
-  for (const [category, score] of Object.entries(scores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      selectedCategory = category;
-    }
+  // ============ VIAJES Y TURISMO ============
+  const travelTerms = ["viajes", "turismo", "destino", "hotel", "resort", "turistico",
+    "vacaciones", "playa", "montaña", "aeropuerto", "pasaje", "vuelo", "crucero"];
+
+  travelTerms.forEach(term => { if (text.includes(term)) scores.viajes += 4; });
+
+  // ============ GASTRONOMÍA (MUY ESPECÍFICA) ============
+  const foodTerms = ["gastronomia", "restaurante", "chef", "receta", "cocina profesional",
+    "cocinero", "menu", "plato gourmet", "michelin", "buen comer", "gastronomico"];
+
+  foodTerms.forEach(term => { if (text.includes(term)) scores.gastronomia += 6; });
+
+  // ============ CULTURA (ARTE Y ENTRETENIMIENTO) ============
+  const cultureTerms = ["cultura", "arte", "cine", "pelicula", "museo", "galeria",
+    "historia", "teatro", "literatura", "pintura", "escultura", "patrimonio"];
+  const musicTerms = ["musica", "concierto", "orquesta", "compositor", "musico", "sinfonica", "banda", "cancion"];
+
+  cultureTerms.forEach(term => { if (text.includes(term)) scores.cultura += 5; });
+  musicTerms.forEach(term => { if (text.includes(term)) scores.cultura += 4; });
+
+  // ============ SOCIEDAD Y EDUCACIÓN ============
+  const societyTerms = ["educacion", "escuela", "universidad", "estudiante", "profesor",
+    "docente", "academico", "derechos", "comunidad", "igualdad", "justicia", "genero",
+    "feminismo", "discriminacion", "inclusion", "social"];
+
+  societyTerms.forEach(term => { if (text.includes(term)) scores.sociedad += 4; });
+
+  // ============ SISTEMA DE PRIORIDADES ============
+  // Cuando hay ambigüedad muy alta, descartar
+  const maxScore = Math.max(...Object.values(scores));
+  const scoresAboveThreshold = Object.values(scores).filter(s => s > 0).length;
+
+  // Si hay más de 4 categorías con puntuación alta = ambiguo = NO MOSTRAR
+  if (scoresAboveThreshold > 4 && maxScore < 15) {
+    return ""; // Indica contenido demasiado ambiguo
   }
 
-  // Si no hay coincidencias con puntuación, usar default
+  // Si no hay puntuación suficiente = usar default pero marcar como débil
   if (maxScore === 0) {
     return defaultCategory;
+  }
+
+  // Seleccionar ganador
+  let selectedCategory = defaultCategory;
+  let maxScoreValue = 0;
+
+  for (const [category, score] of Object.entries(scores)) {
+    if (score > maxScoreValue) {
+      maxScoreValue = score;
+      selectedCategory = category;
+    }
   }
 
   return selectedCategory;
@@ -362,6 +409,12 @@ function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem |
 
   // Categoría final e imagen
   const category = categorizeContent(cleanTitle, cleanSummary, feedCategory);
+
+  // Si la categoría es ambigua/vacía, descartar
+  if (category === "") {
+    return null; // DISCARD - Contenido demasiado ambiguo o sin categoría clara
+  }
+
   const imageUrl = extractImageUrl(item);
 
   // Fallback IDs robustness
