@@ -251,7 +251,7 @@ function hasSubstantiveContent(title: string, summary: string): boolean {
 // ---------------------------------------------------------
 // CATEGORIZACIÓN Y CLASIFICACIÓN
 // ---------------------------------------------------------
-export function categorizeContent(title: string, summary: string, defaultCategory: string): string {
+export function categorizeContent(title: string, summary: string): string {
   const text = normalizeText(`${title} ${summary}`);
   const titleText = normalizeText(title);
 
@@ -369,17 +369,16 @@ export function categorizeContent(title: string, summary: string, defaultCategor
   globalTerms.forEach(term => { if (text.includes(term)) scores.internacional += 3; });
 
   // ============ SISTEMA DE PRIORIDADES ============
-  // Cuando hay ambigüedad muy alta, descartar
+  // Encontrar el ganador (categoría con más puntos)
   const maxScore = Math.max(...Object.values(scores));
-  const scoresAboveThreshold = Object.values(scores).filter(s => s > 0).length;
 
-  // Si no hay puntuación suficiente = usar default del feed
+  // Si no hay puntuación suficiente, usar "internacional" como fallback universal
   if (maxScore === 0) {
-    return defaultCategory || "internacional";
+    return "internacional";
   }
 
   // Seleccionar ganador
-  let selectedCategory = defaultCategory || "internacional";
+  let selectedCategory = "internacional"; // Fallback default
   let maxScoreValue = 0;
 
   for (const [category, score] of Object.entries(scores)) {
@@ -461,7 +460,8 @@ function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem |
   const mode = getDisplayMode(cleanSummary.length);
 
   // Categoría final e imagen
-  const category = categorizeContent(cleanTitle, cleanSummary, feedCategory);
+  // Ignorar completamente categoría del feed - usar SOLO nuestro clasificador
+  const category = categorizeContent(cleanTitle, cleanSummary);
 
   // La categoría SIEMPRE es válida (nunca vacía), así que no hay que verificar
 
