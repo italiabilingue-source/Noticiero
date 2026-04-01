@@ -54,6 +54,15 @@ export const GOSSIP_WORDS = [
   "famoso", "actriz", "actor", "telenovela", "reality", "influencer", "youtube", "instagram", "tiktok", "cantante", "música", "concierto", "gossip", "chisme", "divorcio", "relación", "novio", "novia", "boda", "pareja", "celebridad", "famosa", "farándula", "espectáculos", "entretenimiento", "videoclip", "disco", "artista", "estrella de cine", "hollywood", "reality show", "gran hermano", "casa de los famosos", "survivor", "el bachelor", "amor a ciegas", "love is blind", "repechaje", "eliminado", "gala", "tenista famoso", "futbolista novia", "juego de azar"
 ];
 
+// Palabras que indican "basura" - noticias sin contenido real (live blogs, minuto a minuto, coberturas)
+export const JUNK_NEWS_PATTERNS = [
+  "minuto a minuto", "al minuto", "en vivo", "en directo", "live blog", "live blogging",
+  "últimas noticias", "últimas novedades", "últimas horas", "últimas actualizaciones",
+  "seguí acá", "seguimos", "cobertura", "todo lo que pasa", "todo lo que sucede",
+  "aquí van", "en este directo", "minuto tras minuto", "momento a momento",
+  "actualización en vivo", "actualización por actualización", "se viene"
+];
+
 export const CATEGORIES = ["política", "economía", "sociedad", "tecnología", "cultura", "deporte", "gastronomía", "salud", "viajes", "medioambiente", "internacional"];
 
 export interface NewsItem {

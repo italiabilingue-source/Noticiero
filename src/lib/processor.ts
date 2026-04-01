@@ -1,4 +1,4 @@
-import { FORBIDDEN_WORDS, GOSSIP_WORDS, CATEGORIES, type NewsItem } from './config';
+import { FORBIDDEN_WORDS, GOSSIP_WORDS, JUNK_NEWS_PATTERNS, CATEGORIES, type NewsItem } from './config';
 
 function normalizeText(text: string): string {
   if (!text) return "";
@@ -219,7 +219,46 @@ function getDisplayMode(summaryLength: number): 'short' | 'medium' | 'long' {
 }
 
 // ---------------------------------------------------------
-// REGLAS GENERALES & CLASIFICACIÓN
+// JUNK NEWS DETECTION - Filtra "minuto a minuto", live blogs, coberturas
+// ---------------------------------------------------------
+const junkNormalized = JUNK_NEWS_PATTERNS.map(normalizeText);
+
+function isJunkNews(title: string, summary: string): boolean {
+  const combined = normalizeText(`${title} ${summary}`);
+
+  // Solo eliminar si es CLARAMENTE minuto a minuto O similar
+  // Y el contenido está vacío de información
+  const isJunk = junkNormalized.some(pattern => combined.includes(pattern));
+
+  if (isJunk) {
+    // Pero si tiene contenido sustantivo real, NO eliminar
+    // Chequeamos si hay al menos algo de contexto
+    const wordCount = summary.split(/\s+/).length;
+    if (wordCount < 15) {
+      return true; // Sí, es basura + muy corto = descartar
+    }
+  }
+
+  return false;
+}
+
+// ---------------------------------------------------------
+// SUBSTANTIVE CONTENT CHECK - Valida si es REALMENTE vacío
+// ---------------------------------------------------------
+function hasSubstantiveContent(title: string, summary: string): boolean {
+  const combined = `${title} ${summary}`;
+
+  // Solo rechaza si es TOTALMENTE vacío
+  const reallyEmpty = [
+    /^[\s\-\.\,"']*$/, // solo caracteres vacíos
+    /^\W{1,5}$/, // solo 1-5 caracteres especiales
+  ];
+
+  return !reallyEmpty.some(p => p.test(combined.trim()));
+}
+
+// ---------------------------------------------------------
+// CATEGORIZACIÓN Y CLASIFICACIÓN
 // ---------------------------------------------------------
 export function categorizeContent(title: string, summary: string, defaultCategory: string): string {
   const text = normalizeText(`${title} ${summary}`);
@@ -237,6 +276,7 @@ export function categorizeContent(title: string, summary: string, defaultCategor
     sociedad: 0,
     cultura: 0,
     tecnologia: 0,
+    internacional: 0
   };
 
   // ============ DEPORTE (MÁXIMA PRIORIDAD CUANDO SE DETECTA) ============
@@ -257,92 +297,98 @@ export function categorizeContent(title: string, summary: string, defaultCategor
 
   // ============ POLÍTICA (ALTA PRIORIDAD) ============
   const politicaTerms = ["politica", "gobierno", "presidente", "elecciones", "ministro", "congreso",
-    "ley", "diputado", "senador", "voto", "electoral", "reforma", "decreto", "parlamento"];
+    "ley", "diputado", "senador", "voto", "electoral", "reforma", "decreto", "parlamento", "senado",
+    "poder judicial", "corte suprema", "justicia"];
   const conflictTerms = ["guerra", "conflicto", "tratado", "diplomacia", "negociacion", "acuerdo",
     "iran", "israel", "palestina", "ucrania", "rusia", "siria", "gaza", "occidente", "china"];
 
-  politicaTerms.forEach(term => { if (text.includes(term)) scores.politica += 5; });
-  conflictTerms.forEach(term => { if (text.includes(term)) scores.politica += 6; });
+  politicaTerms.forEach(term => { if (text.includes(term)) scores.politica += 6; });
+  conflictTerms.forEach(term => { if (text.includes(term)) scores.politica += 7; });
 
   // ============ ECONOMÍA ============
   const economiaTerms = ["economia", "dolar", "inflacion", "mercados", "empresas", "inversiones",
     "fmi", "banco central", "bolsa", "accion", "mercado financiero", "negocios", "comercio",
-    "exportacion", "importacion", "arancel", "impuesto", "tributario", "pib", "desempleo"];
+    "exportacion", "importacion", "arancel", "impuesto", "tributario", "pib", "desempleo", "superavit"];
 
-  economiaTerms.forEach(term => { if (text.includes(term)) scores.economia += 5; });
-  if (titleText.match(/dolar|inflacion|bolsa|mercado/i)) scores.economia += 3;
+  economiaTerms.forEach(term => { if (text.includes(term)) scores.economia += 6; });
+  if (titleText.match(/dolar|inflacion|bolsa|mercado/i)) scores.economia += 4;
 
   // ============ TECNOLOGÍA (ESPECÍFICO) ============
   const techTerms = ["tecnologia", "software", "hardware", "computadora", "codigo", "programacion",
     "algoritmo", "iot", "blockchain", "crypto", "metaverso", "inteligencia artificial", "ia",
-    "internet", "app", "smartphone", "iphone", "android", "startup", "github"];
-  const techCompanies = ["apple", "google", "microsoft", "meta", "amazon", "tesla", "nvidia", "openai"];
+    "internet", "app", "smartphone", "iphone", "android", "startup", "github", "digital"];
+  const techCompanies = ["apple", "google", "microsoft", "meta", "amazon", "tesla", "nvidia", "openai", "chatgpt"];
   const spaceTerms = ["espacio", "nasa", "satelite", "astronauta", "cohete", "astronomia", "universo", "planeta"];
 
-  techTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 5; });
-  techCompanies.forEach(term => { if (text.includes(term)) scores.tecnologia += 6; });
-  spaceTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 5; });
+  techTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 6; });
+  techCompanies.forEach(term => { if (text.includes(term)) scores.tecnologia += 7; });
+  spaceTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 6; });
 
   // ============ SALUD (MÉDICO Y ESPECÍFICO) ============
   const healthTerms = ["salud", "medico", "doctor", "hospital", "enfermedad", "coronavirus",
     "covid", "vacuna", "medicamento", "virus", "epidemia", "pandemia", "cancer", "diabetes",
     "nutricion", "dieta", "ejercicio fisico", "bienestar", "psicologia", "mental"];
 
-  healthTerms.forEach(term => { if (text.includes(term)) scores.salud += 5; });
-  if (titleText.match(/salud|medico|hospital/i)) scores.salud += 3;
+  healthTerms.forEach(term => { if (text.includes(term)) scores.salud += 6; });
+  if (titleText.match(/salud|medico|hospital/i)) scores.salud += 4;
 
   // ============ MEDIOAMBIENTE (CLIMA Y NATURALEZA) ============
   const envTerms = ["clima", "calentamiento global", "contaminacion", "ecologia", "cambio climatico",
     "sostenible", "verde", "bosque", "ocean", "lluvia", "tormenta", "niebla", "granizo", "nieve",
     "sequia", "inundacion", "meteoro", "fenomeno climatico", "temperatura", "humedad", "viento"];
 
-  envTerms.forEach(term => { if (text.includes(term)) scores.medioambiente += 4; });
-  if (titleText.match(/clima|lluvia|tormenta|bloqueo atmosferico/i)) scores.medioambiente += 3;
+  envTerms.forEach(term => { if (text.includes(term)) scores.medioambiente += 5; });
+  if (titleText.match(/clima|lluvia|tormenta|bloqueo atmosferico/i)) scores.medioambiente += 4;
 
   // ============ VIAJES Y TURISMO ============
   const travelTerms = ["viajes", "turismo", "destino", "hotel", "resort", "turistico",
     "vacaciones", "playa", "montaña", "aeropuerto", "pasaje", "vuelo", "crucero"];
 
-  travelTerms.forEach(term => { if (text.includes(term)) scores.viajes += 4; });
+  travelTerms.forEach(term => { if (text.includes(term)) scores.viajes += 5; });
 
   // ============ GASTRONOMÍA (MUY ESPECÍFICA) ============
   const foodTerms = ["gastronomia", "restaurante", "chef", "receta", "cocina profesional",
     "cocinero", "menu", "plato gourmet", "michelin", "buen comer", "gastronomico"];
 
-  foodTerms.forEach(term => { if (text.includes(term)) scores.gastronomia += 6; });
+  foodTerms.forEach(term => { if (text.includes(term)) scores.gastronomia += 7; });
 
   // ============ CULTURA (ARTE Y ENTRETENIMIENTO) ============
   const cultureTerms = ["cultura", "arte", "cine", "pelicula", "museo", "galeria",
     "historia", "teatro", "literatura", "pintura", "escultura", "patrimonio"];
   const musicTerms = ["musica", "concierto", "orquesta", "compositor", "musico", "sinfonica", "banda", "cancion"];
 
-  cultureTerms.forEach(term => { if (text.includes(term)) scores.cultura += 5; });
-  musicTerms.forEach(term => { if (text.includes(term)) scores.cultura += 4; });
+  cultureTerms.forEach(term => { if (text.includes(term)) scores.cultura += 6; });
+  musicTerms.forEach(term => { if (text.includes(term)) scores.cultura += 5; });
 
   // ============ SOCIEDAD Y EDUCACIÓN ============
   const societyTerms = ["educacion", "escuela", "universidad", "estudiante", "profesor",
     "docente", "academico", "derechos", "comunidad", "igualdad", "justicia", "genero",
     "feminismo", "discriminacion", "inclusion", "social"];
 
-  societyTerms.forEach(term => { if (text.includes(term)) scores.sociedad += 4; });
+  societyTerms.forEach(term => { if (text.includes(term)) scores.sociedad += 5; });
+
+  // ============ INTERNACIONAL (FALLBACK PARA NOTICIAS GLOBALES) ============
+  const internationalCountries = ["estados unidos", "nueva york", "inglaterra", "francia", "españa",
+    "italia", "alemania", "japan", "tokio", "beijing", "londees", "paris", "berlin", "mexico",
+    "canada", "brasil", "australia", "nueva zelanda", "tailandia", "vietnam"];
+  const globalTerms = ["internacional", "global", "mundial", "paises", "europa", "asia", "america",
+    "africa", "oceania", "organizacion internacional", "naciones unidas", "onu", "union europea"];
+
+  internationalCountries.forEach(term => { if (text.includes(term)) scores.internacional += 4; });
+  globalTerms.forEach(term => { if (text.includes(term)) scores.internacional += 3; });
 
   // ============ SISTEMA DE PRIORIDADES ============
   // Cuando hay ambigüedad muy alta, descartar
   const maxScore = Math.max(...Object.values(scores));
   const scoresAboveThreshold = Object.values(scores).filter(s => s > 0).length;
 
-  // Si hay más de 4 categorías con puntuación alta = ambiguo = NO MOSTRAR
-  if (scoresAboveThreshold > 4 && maxScore < 15) {
-    return ""; // Indica contenido demasiado ambiguo
-  }
-
-  // Si no hay puntuación suficiente = usar default pero marcar como débil
+  // Si no hay puntuación suficiente = usar default del feed
   if (maxScore === 0) {
-    return defaultCategory;
+    return defaultCategory || "internacional";
   }
 
   // Seleccionar ganador
-  let selectedCategory = defaultCategory;
+  let selectedCategory = defaultCategory || "internacional";
   let maxScoreValue = 0;
 
   for (const [category, score] of Object.entries(scores)) {
@@ -352,6 +398,7 @@ export function categorizeContent(title: string, summary: string, defaultCategor
     }
   }
 
+  // NUNCA devolver vacío - siempre hay categoría válida
   return selectedCategory;
 }
 
@@ -373,13 +420,23 @@ function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem |
   const rawTitle = item.title || '';
   const rawContent = item.contentSnippet || item.content || '';
 
-  // 0. VALIDACIÓN MÍNIMA: Si no hay título o contenido es insuficiente, descartar
-  if (!rawTitle || rawTitle.trim().length < 10) {
-    return null; // DISCARD - Título muy corto
+  // 0. VALIDACIÓN MÍNIMA: Si no hay NADA, descartar (relajado)
+  if (!rawTitle || !rawTitle.trim()) {
+    return null; // DISCARD - Sin título
   }
 
-  if (!rawContent || rawContent.trim().length < 30) {
-    return null; // DISCARD - Sin suficiente contenido
+  if (!rawContent || !rawContent.trim()) {
+    return null; // DISCARD - Sin contenido
+  }
+
+  // NUEVO: Detected junk news (minuto a minuto, en vivo, coberturas, etc)
+  if (isJunkNews(rawTitle, rawContent)) {
+    return null; // DISCARD - Basura (live blog, minuto a minuto, cobertura)
+  }
+
+  // NUEVO: Verificar que tenga contenido sustantivo (no solo estructura vacía)
+  if (!hasSubstantiveContent(rawTitle, rawContent)) {
+    return null; // DISCARD - Sin contenido real/sustantivo
   }
 
   // NUEVO: Remover clickbait y reescribir
@@ -397,11 +454,16 @@ function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem |
   const cleanTitle = normalizeTitle(institutionalTitle);
 
   // 3 & 4: Resumen automático neutral y limpio
-  const cleanSummary = summarizeSnippet(declickbaitSummary);
+  let cleanSummary = summarizeSnippet(declickbaitSummary);
 
-  // Si el resumen resultó muy corto después de limpieza, descartar
-  if (cleanSummary.length < 30) {
-    return null; // DISCARD - Resumen insuficiente después de limpieza
+  // Si quedó muy corto, intentar reconstruir desde el título limpio
+  if (cleanSummary.length < 20 && cleanTitle.length > 5) {
+    cleanSummary = cleanTitle + ". " + declickbaitSummary.substring(0, 100);
+  }
+
+  // NO descartar si resumen es corto - siempre hay algo
+  if (!cleanSummary.trim()) {
+    cleanSummary = cleanTitle; // Fallback al título
   }
 
   // 6: Decisión visual
@@ -410,10 +472,7 @@ function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem |
   // Categoría final e imagen
   const category = categorizeContent(cleanTitle, cleanSummary, feedCategory);
 
-  // Si la categoría es ambigua/vacía, descartar
-  if (category === "") {
-    return null; // DISCARD - Contenido demasiado ambiguo o sin categoría clara
-  }
+  // La categoría SIEMPRE es válida (nunca vacía), así que no hay que verificar
 
   const imageUrl = extractImageUrl(item);
 
