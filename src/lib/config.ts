@@ -46,7 +46,8 @@ export async function saveSettings(settings: SiteSettings) {
 }
 
 export const FORBIDDEN_WORDS = [
-  "robo", "asesinato", "crimen", "violencia", "muerte", "policial", "mató", "tiroteo", "violación", "abuso", "sangre", "secuestro", "narcotráfico", "cadáver", "homicidio", "femicidio", "accidente", "choque", "tragedia"
+  "sicario", "cartel", "narcotráfico", "trata de personas", "mafia", "banda criminal",
+  "organización criminal", "crimen organizado"
 ];
 
 // Entertainment/Celebrity gossip words to filter out

@@ -92,18 +92,12 @@ function institutionalizeTitle(title: string): string {
 const forbiddenNormalized = FORBIDDEN_WORDS.map(normalizeText);
 const gossipNormalized = GOSSIP_WORDS.map(normalizeText);
 
-// Semantic/Contextual trigger phrases that imply violence/crime
+// Semantic/Contextual trigger phrases that imply violence/organized crime ONLY
 const suspiciousPhrases = [
   "a los tiros", "ingreso a los tiros", "a punta de pistola",
-  "abuso sexual", "ajuste de cuentas", "arma blanca", "arma de fuego",
-  "ataque armado", "atentado", "bala", "balacera", "brutal golpiza",
-  "cadaver", "cartel", "crimen", "delincuencia", "disparo",
-  "doble homicidio", "femicidio", "fuego cruzado", "gatillo",
-  "golpes", "herido de gravedad", "homicidio", "infarto", "lesiones",
-  "mato", "matanza", "muerte", "muerto", "mutilado", "narcotrafico",
-  "punalada", "robo", "sangre", "secuestro", "sicario", "terrorismo",
-  "tragedia", "violencia", "violacion", "ataque", "macabro", "horror",
-  "siniestro vial", "accidente fatal", "hallazgo", "hallaron cuerpo"
+  "ajuste de cuentas", "balacera", "cartel", "sicario",
+  "narcotrafico", "trata de personas", "mafia", "banda criminal",
+  "secuestro", "terrorismo", "atentado terrorista"
 ].map(normalizeText);
 
 // Palabras que indican noticias genéricas/vacías sin contenido real
@@ -111,14 +105,11 @@ const genericPhrases = [
   "cobertura en tiempo real",
   "actualización en directo",
   "se actualizará",
-  "últimas novedades",
   "información en desarrollo",
   "actualizaremos cuando",
   "más información próximamente",
   "sigue aquí para",
-  "permanece atento",
-  "en vivo",
-  "live updates"
+  "permanece atento"
 ].map(normalizeText);
 
 export function isContentAllowed(title: string, content: string): boolean {
