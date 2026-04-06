@@ -21,28 +21,27 @@ function getYoutubeId(url: string) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-// Transformación Automática Inteligente de Títulos
+// Formatear título para TV: limpiar sin mutilar
 function formatTVTitle(title: string): string {
-    let clean = title;
+    let clean = title.trim();
 
-    // Si tiene un patrón de partido, intenta extraerlo limpio (ej. Argentina vs. Zambia)
-    if (clean.includes("vs.")) {
+    // Remover sufijos de fuente tipo " | La Nación" o " - La Nación"
+    clean = clean.replace(/\s*[\|\-]\s*(La Naci\u00f3n|Clarin|Infobae|Corriere|Repubblica|BBC|Reuters).*$/i, '');
+
+    // Si tiene patrón de partido, extraerlo limpio
+    if (clean.includes("vs.") || clean.includes(" vs ")) {
         const teams = clean.match(/([A-Z][a-zA-Z\s]+)\s+vs\.?\s+([A-Z][a-zA-Z\s]+)/i);
         if (teams) return `${teams[1].trim()} vs. ${teams[2].trim()}`;
     }
 
-    // Regla: A veces la coma corta el contexto basura ("Cuándo juega Boca, por la fecha...")
-    if (clean.includes(",") && clean.length > 60) {
-        clean = clean.split(",")[0];
+    // Limitar a máximo 120 caracteres sin cortar palabras
+    if (clean.length > 120) {
+        const cut = clean.substring(0, 120);
+        const lastSpace = cut.lastIndexOf(' ');
+        clean = cut.substring(0, lastSpace > 60 ? lastSpace : 120) + '...';
     }
 
-    // Regla: Si hay dos puntos, a veces lo importante es lo primero o el resumen
-    if (clean.includes(":") && clean.length > 70) {
-        const parts = clean.split(":");
-        clean = parts[0].length > 15 ? parts[0] : parts[1];
-    }
-
-    return clean.trim();
+    return clean;
 }
 
 // Limpiar y formatear texto para TV
@@ -104,21 +103,20 @@ const processedForTv = tvNews.map((item, index) => {
              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black/40 backdrop-blur-[8px]"></div>
           </div>
 
-          <div class="relative w-full h-full flex flex-col justify-end p-12 lg:p-20 pb-28">
-            <div class="max-w-7xl w-full mx-auto relative">
+          <div class="relative w-full h-full flex flex-col justify-end p-12 lg:p-16 pb-16 pt-32">
+            <div class="max-w-6xl w-full mx-auto relative flex flex-col justify-end">
                 
                 {/* [CATEGORÍA] | [FUENTE - FECHA] */}
-                <div class="flex items-center shadow-sm mb-4 opacity-0 header-anim text-gray-400 font-bold uppercase tracking-widest text-lg">
+                <div class="flex items-center mb-6 opacity-0 header-anim text-gray-400 font-bold uppercase tracking-widest text-lg">
                     <span class="text-[#008C45] mr-3">■</span>
                     <span class="text-white mr-4">{article.category}</span>
                     <span class="mx-3 text-white/30 truncate flex-1">
-                        / <strong class="text-white/80 mx-2">{article.source.toUpperCase()}</strong> / 
-                        ESTA SEMANA
+                        / <strong class="text-white/80 mx-2">{article.source.toUpperCase()}</strong>
                     </span>
                 </div>
 
-                {/* TÍTULO LIMPIO Y CORTO */}
-                <h1 class="text-6xl md:text-[5rem] font-serif font-black text-white leading-tight drop-shadow-2xl line-clamp-2 mb-8 opacity-0 title-anim max-w-6xl">
+                {/* TÍTULO COMPLETO - sin clamp para evitar errores de renderizado */}
+                <h1 class="text-[2.5rem] md:text-[3.2rem] font-serif font-black text-white leading-tight drop-shadow-2xl mb-10 opacity-0 title-anim">
                    {article.tvTitle}
                 </h1>
 
@@ -128,8 +126,8 @@ const processedForTv = tvNews.map((item, index) => {
                 </div>
 
                 {/* SCROLL SUAVE (TELEPROMPTER) PARA CONTENIDO LARGO */}
-                <div class="bg-black/50 p-10 px-12 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative opacity-0 content-anim max-w-5xl">
-                    <div class="overflow-hidden h-[380px] relative prompter-mask">
+                <div class="bg-black/50 p-8 px-10 rounded-3xl border border-white/5 backdrop-blur-xl shadow-2xl relative opacity-0 content-anim max-w-5xl">
+                    <div class="overflow-hidden h-[220px] relative prompter-mask">
                         <div class="prompter-content">
                             <p class="text-[2.5rem] text-gray-50 font-light leading-[1.9] tracking-normal">
                                {article.fullText}
@@ -169,7 +167,8 @@ const processedForTv = tvNews.map((item, index) => {
         </div>
     )}
 
-    {/* Marca Header */}
+    {/* Marca Header con Sombra para Legibilidad */}
+    <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none"></div>
     <div class="absolute top-10 left-12 flex items-center space-x-6 z-30">
         <div class="text-3xl font-serif font-black text-white drop-shadow-md tracking-tighter">
             NOTICIAS<span class="text-[#008C45]">.</span>BILI

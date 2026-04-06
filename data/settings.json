@@ -36,17 +36,24 @@
       "enabled": true
     },
     {
-      "id": "repubblica",
-      "name": "La Repubblica",
-      "url": "https://www.repubblica.it/rss/homepage/rss2.0.xml",
-      "country": "IT",
-      "enabled": true
-    },
-    {
       "id": "corriere",
       "name": "Corriere della Sera",
       "url": "https://xml2.corriereobjects.it/rss/homepage.xml",
       "country": "IT",
+      "enabled": true
+    },
+    {
+      "id": "bbc_world",
+      "name": "BBC World",
+      "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+      "country": "GB",
+      "enabled": true
+    },
+    {
+      "id": "bbc_tech",
+      "name": "BBC Technology",
+      "url": "http://feeds.bbci.co.uk/news/technology/rss.xml",
+      "country": "GB",
       "enabled": true
     }
   ],
