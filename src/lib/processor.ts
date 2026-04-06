@@ -118,30 +118,24 @@ export function isContentAllowed(title: string, content: string): boolean {
   const combinedText = normalizeText(`${title} ${content}`);
   const titleText = normalizeText(title);
 
-  // Exact forbidden words (violence/crime)
+  // Exact forbidden words (violence/crime organizations)
   for (const word of forbiddenNormalized) {
     if (combinedText.includes(word)) return false;
   }
 
-  // Gossip/Entertainment words (farándula)
+  // Gossip/Entertainment words (farándula) — now more precise
   for (const word of gossipNormalized) {
     if (combinedText.includes(word)) return false;
   }
 
-  // Non-journalistic content (advice, wellness, lifestyle, etc.)
+  // Non-journalistic content — check title only, not body (body may mention these incidentally)
   for (const word of nonJournalisticNormalized) {
-    if (combinedText.includes(word)) return false;
+    if (titleText.includes(word)) return false;
   }
 
-  // Soft clickbait titles
+  // Soft clickbait titles — exact title matches only
   for (const pattern of clickbaitTitlesNormalized) {
     if (titleText.includes(pattern)) return false;
-  }
-
-  // Check if title is too generic / looks like a blog post
-  if (titleText.startsWith("por que ") || titleText.startsWith("como ") || 
-      titleText.includes("los mejores ") || titleText.includes("consejos para")) {
-    return false;
   }
 
   // Suspicious phrases (Semantic detection baseline)
@@ -154,7 +148,7 @@ export function isContentAllowed(title: string, content: string): boolean {
     if (combinedText.includes(phrase)) return false;
   }
 
-  return true; // No violence, gossip, or empty content detected
+  return true;
 }
 
 // ---------------------------------------------------------
@@ -273,7 +267,7 @@ function hasSubstantiveContent(title: string, summary: string): boolean {
 export function categorizeContent(title: string, summary: string, feedCategory?: string): string | null {
   const text = normalizeText(`${title} ${summary}`);
   
-  // Scoring system
+  // Scoring system — keys must be WITHOUT accents (post-normalizeText)
   let scores: Record<string, number> = {
     deporte: 0,
     politica: 0,
@@ -284,54 +278,117 @@ export function categorizeContent(title: string, summary: string, feedCategory?:
     internacional: 0
   };
 
-  // Give boost to feed category if it exists and is valid
-  if (feedCategory && scores.hasOwnProperty(feedCategory.toLowerCase())) {
-    scores[feedCategory.toLowerCase()] += 3;
+  // Give boost to feed category — normalize it first to remove accents
+  if (feedCategory) {
+    const normalizedFeed = normalizeText(feedCategory);
+    if (Object.prototype.hasOwnProperty.call(scores, normalizedFeed)) {
+      scores[normalizedFeed] += 5; // extra boost so feed helps stabilize
+    }
   }
 
-  // ============ DEPORTE ============
-  const sportTerms = ["futbol", "futbolista", "partido", "gol", "equipo", "jugador",
-    "entrenador", "tenis", "basquet", "voley", "rugby", "ciclismo"];
-  const sportTeams = ["boca", "river", "independiente", "racing"];
-  const sportEvents = ["mundial", "copa del mundo", "libertadores", "olimpiadas"];
+  // ============ DEPORTE (ES + IT) ============
+  const sportTerms = [
+    // español — terms unambiguous in sports context
+    "futbol", "futbolista", "gol", "jugador", "entrenador",
+    "tenis", "basquet", "voley", "rugby", "ciclismo", "atletismo",
+    "semifinal", "clasificacion",
+    // italiano — only UNAMBIGUOUS sport-specific terms
+    "calciatore", "allenatore", "serie a", "classifica",
+    "formazione", "scudetto", "champions league",
+    "pallone", "portiere", "arbitro", "rigore", "pareggio",
+    "marcatore", "dribbling", "gara di calcio", "partita di calcio"
+  ];
+  const sportTeams = [
+    "boca juniors", "river plate", "independiente", "racing club",
+    "napoli", "milan ac", "ac milan", "juventus", "fiorentina",
+    "real madrid", "fc barcelona", "atletico madrid", "manchester city", "manchester united"
+  ];
+  const sportEvents = [
+    "copa del mundo", "libertadores", "olimpiadas", "copa america",
+    "campeonato argentino", "copa italia", "serie a italiana"
+  ];
 
   sportTerms.forEach(term => { if (text.includes(term)) scores.deporte += 5; });
-  sportTeams.forEach(team => { if (text.includes(team)) scores.deporte += 8; });
-  sportEvents.forEach(event => { if (text.includes(event)) scores.deporte += 7; });
+  sportTeams.forEach(team => { if (new RegExp(`\\b${team}\\b`).test(text)) scores.deporte += 10; });
+  sportEvents.forEach(event => { if (text.includes(event)) scores.deporte += 8; });
 
-  // ============ POLÍTICA ============
-  const politicaTerms = ["politica", "gobierno", "presidente", "elecciones", "ministro", "congreso", "ley", "diputados", "senadores", "presupuesto"];
-  const conflictTerms = ["guerra", "conflicto", "iran", "israel", "ucrania", "rusia"];
+  // ============ POLÍTICA (ES + IT) ============
+  const politicaTerms = [
+    // español
+    "politica", "gobierno", "presidente", "elecciones", "ministro", "congreso", "ley",
+    "diputados", "senadores", "presupuesto", "decreto", "reforma", "oposicion",
+    "oficialismo", "candidato", "votacion", "partido politico", "jefatura",
+    // italiano
+    "governo", "premier", "parlamento", "elezioni", "senato", "legge",
+    "meloni", "politico", "coalizione", "opposizione", "palazzo chigi",
+    "sindaco", "procura", "magistratura", "inchiesta", "pm", "indagato",
+    "tribunale", "giudice", "sentenza", "processo", "corruzione", "scandalo"
+  ];
+  const conflictTerms = [
+    "guerra", "conflicto", "iran", "israel", "ucrania", "rusia", "conflitto",
+    "bombardeo", "tropas", "ejercito", "armisticio", "misil", "ataque", "guerra"
+  ];
 
   politicaTerms.forEach(term => { if (text.includes(term)) scores.politica += 6; });
   conflictTerms.forEach(term => { if (text.includes(term)) scores.politica += 7; });
 
-  // ============ ECONOMÍA ============
-  const economiaTerms = ["economia", "dolar", "inflacion", "mercado", "bolsa", "fmi", "banco central", "deficit", "pbi", "exportacion", "importacion", "ahorro"];
+  // ============ ECONOMÍA (ES + IT) ============
+  const economiaTerms = [
+    // español
+    "economia", "dolar", "inflacion", "mercado", "bolsa", "fmi", "banco central",
+    "deficit", "pbi", "exportacion", "importacion", "comercio", "inversion",
+    "empresas", "tarifas", "impuesto",
+    // italiano
+    "economia", "mercato", "borsa", "inflazione", "tasso", "banca", "pil",
+    "commercio", "investimento", "azienda", "impresa"
+  ];
   economiaTerms.forEach(term => { if (text.includes(term)) scores.economia += 6; });
 
-  // ============ TECNOLOGÍA ============
-  const techTerms = ["tecnologia", "software", "ia", "inteligencia artificial", "app", "digital", "gadget", "ciberseguridad", "redes sociales"];
-  const techCompanies = ["apple", "google", "microsoft", "nasa", "openai"];
+  // ============ TECNOLOGÍA (ES + IT) ============
+  const techTerms = [
+    "tecnologia", "software", "inteligencia artificial", "digital", "gadget",
+    "ciberseguridad", "algoritmo", "robotica", "startup", "innovacion",
+    // italiano
+    "intelligenza artificiale", "tecnologia", "startup", "innovazione", "robot"
+  ];
+  const techCompanies = ["apple", "google", "microsoft", "nasa", "openai", "meta", "tesla"];
+  // Note: "app" and "ia" removed — too short/common, cause false positives
 
   techTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 6; });
   techCompanies.forEach(term => { if (text.includes(term)) scores.tecnologia += 7; });
 
-  // ============ CULTURA ============
-  const cultureTerms = ["cultura", "arte", "cine", "pelicula", "museo", "teatro", "literatura", "exposicion"];
+  // ============ CULTURA (ES + IT) ============
+  const cultureTerms = [
+    // español
+    "cultura", "arte", "cine", "pelicula", "museo", "teatro", "literatura", "exposicion",
+    "escritor", "libro", "novela", "pintura", "escultura", "festival cultural",
+    // italiano
+    "cultura", "cinema", "film", "mostra", "scultura", "pittore", "scrittore",
+    "letteratura", "spettacolo", "festival"
+  ];
   cultureTerms.forEach(term => { if (text.includes(term)) scores.cultura += 6; });
 
-  // ============ SOCIEDAD ============
-  const societyTerms = ["educacion", "escuela", "universidad", "derechos", "comunidad", "protesta", "marcha", "transito", "clima"];
+  // ============ SOCIEDAD (ES + IT) ============
+  const societyTerms = [
+    // español
+    "educacion", "escuela", "universidad", "derechos", "comunidad", "protesta",
+    "marcha", "huelga", "accidente", "tragedia", "crimen", "seguridad", "justicia",
+    // italiano
+    "scuola", "universita", "diritti", "protesta", "sciopero", "incidente", "giustizia"
+  ];
   societyTerms.forEach(term => { if (text.includes(term)) scores.sociedad += 5; });
 
   // ============ INTERNACIONAL ============
-  const internationalCountries = ["estados unidos", "nueva york", "inglaterra", "francia", "españa",
-    "italia", "alemania", "tokio", "beijing", "londres", "paris", "mexico", "brasil"];
-  const globalTerms = ["internacional", "global", "mundial", "europa", "asia", "naciones unidas"];
+  // Only gets score if clearly foreign context + has substantive other signals
+  const internationalCountries = [
+    "estados unidos", "nueva york", "washington", "casa blanca", "trump", "biden",
+    "alemania", "france", "reino unido", "china", "japon", "corea", "india",
+    "brasil", "mexico", "venezuela", "colombia", "chile", "peru"
+  ];
+  const globalTerms = ["naciones unidas", "onu", "otan", "g7", "g20"];
 
   internationalCountries.forEach(term => { if (text.includes(term)) scores.internacional += 4; });
-  globalTerms.forEach(term => { if (text.includes(term)) scores.internacional += 3; });
+  globalTerms.forEach(term => { if (text.includes(term)) scores.internacional += 5; });
 
   // ============ DECISION ============
   let selectedCategory: string | null = null;
@@ -344,8 +401,8 @@ export function categorizeContent(title: string, summary: string, feedCategory?:
     }
   }
 
-  // Change: If score is too low or no category found, return null (DO NOT SHOW)
-  if (maxScore < 4) return null;
+  // Only show if clearly categorizable (minimum score threshold)
+  if (maxScore < 5) return null;
 
   return selectedCategory;
 }

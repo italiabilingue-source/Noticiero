@@ -1,9 +1,37 @@
 {
   "feeds": [
     {
-      "id": "lanacion_gen",
-      "name": "La Nación - General",
-      "url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/?outputType=xml",
+      "id": "lanacion_politica",
+      "name": "La Nación - Política",
+      "url": "https://www.lanacion.com.ar/politica/rss/",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "lanacion_economia",
+      "name": "La Nación - Economía",
+      "url": "https://www.lanacion.com.ar/economia/rss/",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "lanacion_tecnologia",
+      "name": "La Nación - Tecnología",
+      "url": "https://www.lanacion.com.ar/tecnologia/rss/",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "lanacion_sociedad",
+      "name": "La Nación - Sociedad",
+      "url": "https://www.lanacion.com.ar/sociedad/rss/",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "lanacion_deportes",
+      "name": "La Nación - Deportes",
+      "url": "https://www.lanacion.com.ar/deportes/rss/",
       "country": "AR",
       "enabled": true
     },

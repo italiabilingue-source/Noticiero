@@ -1,9 +1,37 @@
 {
   "feeds": [
     {
-      "id": "lanacion",
-      "name": "La Nación",
-      "url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/?outputType=xml",
+      "id": "lanacion_politica",
+      "name": "La Nación - Política",
+      "url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/politica/?outputType=xml",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "lanacion_economia",
+      "name": "La Nación - Economía",
+      "url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/economia/?outputType=xml",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "lanacion_tecnologia",
+      "name": "La Nación - Tecnología",
+      "url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/tecnologia/?outputType=xml",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "lanacion_sociedad",
+      "name": "La Nación - Sociedad",
+      "url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/sociedad/?outputType=xml",
+      "country": "AR",
+      "enabled": true
+    },
+    {
+      "id": "lanacion_deporte",
+      "name": "La Nación - Deportes",
+      "url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/deportes/?outputType=xml",
       "country": "AR",
       "enabled": true
     },
@@ -11,6 +39,13 @@
       "id": "repubblica",
       "name": "La Repubblica",
       "url": "https://www.repubblica.it/rss/homepage/rss2.0.xml",
+      "country": "IT",
+      "enabled": true
+    },
+    {
+      "id": "corriere",
+      "name": "Corriere della Sera",
+      "url": "https://xml2.corriereobjects.it/rss/homepage.xml",
       "country": "IT",
       "enabled": true
     }

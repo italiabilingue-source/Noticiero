@@ -70,24 +70,40 @@ export const FORBIDDEN_WORDS = [
 ];
 
 // Entertainment/Celebrity gossip words to filter out
+// IMPORTANT: Be precise — only block clear gossip, not journalistic coverage
 export const GOSSIP_WORDS = [
-  "famoso", "actriz", "actor", "telenovela", "reality", "influencer", "youtube", "instagram", "tiktok", "cantante", "música", "concierto", "gossip", "chisme", "divorcio", "relación", "novio", "novia", "boda", "pareja", "celebridad", "famosa", "farándula", "espectáculos", "entretenimiento", "videoclip", "disco", "artista", "estrella de cine", "hollywood", "reality show", "gran hermano", "casa de los famosos", "survivor", "el bachelor", "amor a ciegas", "love is blind", "repechaje", "eliminado", "gala", "tenista famoso", "futbolista novia", "juego de azar"
+  "telenovela", "reality show", "gran hermano", "casa de los famosos", "survivor",
+  "el bachelor", "amor a ciegas", "love is blind", "repechaje", "eliminado de la gala",
+  "farándula", "espectáculos", "futbolista novia", "juego de azar",
+  "chisme", "gossip", "novio de", "novia de", "boda de", "divorcio de",
+  "influencer", "tiktok viral", "instagram viral",
+  // sports celebrity gossip specifically
+  "presentó a su novio", "presentó a su novia", "salió con", "rompió con"
 ];
 
-// Non-journalistic content (advice, wellness, lifestyle, etc.)
+// Non-journalistic content — these are TITLE patterns for lifestyle/advice/health clickbait
+// Only check against the TITLE, not the body
 export const NON_JOURNALISTIC_WORDS = [
-  "consejos de vida", "bienestar", "hábitos", "longevidad", "curiosidades",
-  "lo que hace la gente", "estos son los", "estos son las", "notas tipo revista",
-  "cómo vivir más", "mejorar tu vida", "trucos para", "el secreto de",
-  "la técnica que", "beneficios de", "por qué deberías", "guía para",
-  "lo que nadie te dice", "no hagas esto", "evita estos", "viviendo mejor"
+  // advice/how-to
+  "consejos para", "trucos para", "la técnica para", "por qué deberías",
+  "guía para vivir", "lo que nadie te dice sobre", "evita estos errores",
+  "cómo vivir más", "mejorar tu vida", "el secreto de vivir",
+  // health/diet listicle headlines
+  "cuál es la dieta", "qué alimentos", "los alimentos que", "qué comer",
+  "cómo bajar de peso", "cómo adelgazar", "cómo tratar el", "cómo tratar la",
+  "para qué sirve el", "para qué sirve la", "los beneficios de",
+  "la dieta más eficaz", "el endulzante que", "el ingrediente que",
+  "qué pasa si comés", "qué pasa si tomas", "qué pasa si tomás",
+  // wellness/lifestyle generic
+  "cómo dormir mejor", "cómo reducir el estrés", "el ejercicio que",
+  "el hábito que", "los hábitos que", "cuántas horas"
 ];
 
-// Clickbait titles pattern (soft clickbait)
+// Clickbait title patterns (soft clickbait listicle headlines)
 export const CLICKBAIT_TITLES = [
-  "la gente que vive más", "estos son los hábitos", "lo que nadie te dice",
-  "no hace estos ejercicios", "estos son los mejores", "descubre cómo",
-  "te sorprenderá", "mira lo que pasó", "qué es lo que", "cómo lograr"
+  "la gente que vive más", "estos son los hábitos",
+  "no hace estos ejercicios", "descubre cómo vivir",
+  "te sorprenderá saber", "cosas que no sabías"
 ];
 
 // Palabras que indican "basura" - noticias sin contenido real (live blogs, minuto a minuto, coberturas)
