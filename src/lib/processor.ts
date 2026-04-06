@@ -1,4 +1,4 @@
-import { FORBIDDEN_WORDS, GOSSIP_WORDS, JUNK_NEWS_PATTERNS, CATEGORIES, type NewsItem } from './config';
+import { FORBIDDEN_WORDS, GOSSIP_WORDS, JUNK_NEWS_PATTERNS, CATEGORIES, NON_JOURNALISTIC_WORDS, CLICKBAIT_TITLES, type NewsItem } from './config';
 
 function normalizeText(text: string): string {
   if (!text) return "";
@@ -91,6 +91,8 @@ function institutionalizeTitle(title: string): string {
 // ---------------------------------------------------------
 const forbiddenNormalized = FORBIDDEN_WORDS.map(normalizeText);
 const gossipNormalized = GOSSIP_WORDS.map(normalizeText);
+const nonJournalisticNormalized = NON_JOURNALISTIC_WORDS.map(normalizeText);
+const clickbaitTitlesNormalized = CLICKBAIT_TITLES.map(normalizeText);
 
 // Semantic/Contextual trigger phrases that imply violence/organized crime ONLY
 const suspiciousPhrases = [
@@ -114,6 +116,7 @@ const genericPhrases = [
 
 export function isContentAllowed(title: string, content: string): boolean {
   const combinedText = normalizeText(`${title} ${content}`);
+  const titleText = normalizeText(title);
 
   // Exact forbidden words (violence/crime)
   for (const word of forbiddenNormalized) {
@@ -123,6 +126,22 @@ export function isContentAllowed(title: string, content: string): boolean {
   // Gossip/Entertainment words (farándula)
   for (const word of gossipNormalized) {
     if (combinedText.includes(word)) return false;
+  }
+
+  // Non-journalistic content (advice, wellness, lifestyle, etc.)
+  for (const word of nonJournalisticNormalized) {
+    if (combinedText.includes(word)) return false;
+  }
+
+  // Soft clickbait titles
+  for (const pattern of clickbaitTitlesNormalized) {
+    if (titleText.includes(pattern)) return false;
+  }
+
+  // Check if title is too generic / looks like a blog post
+  if (titleText.startsWith("por que ") || titleText.startsWith("como ") || 
+      titleText.includes("los mejores ") || titleText.includes("consejos para")) {
+    return false;
   }
 
   // Suspicious phrases (Semantic detection baseline)
@@ -251,17 +270,12 @@ function hasSubstantiveContent(title: string, summary: string): boolean {
 // ---------------------------------------------------------
 // CATEGORIZACIÓN Y CLASIFICACIÓN
 // ---------------------------------------------------------
-export function categorizeContent(title: string, summary: string): string {
+export function categorizeContent(title: string, summary: string, feedCategory?: string): string | null {
   const text = normalizeText(`${title} ${summary}`);
-  const titleText = normalizeText(title);
-
-  // Sistema de scoring ponderado por categoría
-  let scores = {
+  
+  // Scoring system
+  let scores: Record<string, number> = {
     deporte: 0,
-    gastronomia: 0,
-    salud: 0,
-    viajes: 0,
-    medioambiente: 0,
     politica: 0,
     economia: 0,
     sociedad: 0,
@@ -270,128 +284,75 @@ export function categorizeContent(title: string, summary: string): string {
     internacional: 0
   };
 
-  // ============ DEPORTE (MÁXIMA PRIORIDAD CUANDO SE DETECTA) ============
-  // Palabras muy específicas de deporte
-  const sportTerms = ["futbol", "futbolista", "partido", "gol", "equipo deportivo", "jugador",
-    "entrenador", "tenis", "basquet", "voley", "baloncesto", "rugby", "ciclismo", "natacion",
-    "atletismo", "boxeo", "beisbol", "campeonato", "liga", "torneo", "competencia", "campeon"];
-  const sportTeams = ["boca", "river", "independiente", "san lorenzo", "racing", "estudiantes"];
-  const sportPositions = ["guardameta", "portero", "arquero", "delantero", "mediocampista", "defensor", "lateral"];
-  const sportEvents = ["mundial", "copa del mundo", "europeo", "libertadores", "super copa", "olimpiadas", "clasificatorios"];
+  // Give boost to feed category if it exists and is valid
+  if (feedCategory && scores.hasOwnProperty(feedCategory.toLowerCase())) {
+    scores[feedCategory.toLowerCase()] += 3;
+  }
 
-  // Scoring deporte
+  // ============ DEPORTE ============
+  const sportTerms = ["futbol", "futbolista", "partido", "gol", "equipo", "jugador",
+    "entrenador", "tenis", "basquet", "voley", "rugby", "ciclismo"];
+  const sportTeams = ["boca", "river", "independiente", "racing"];
+  const sportEvents = ["mundial", "copa del mundo", "libertadores", "olimpiadas"];
+
   sportTerms.forEach(term => { if (text.includes(term)) scores.deporte += 5; });
   sportTeams.forEach(team => { if (text.includes(team)) scores.deporte += 8; });
-  sportPositions.forEach(pos => { if (text.includes(pos)) scores.deporte += 4; });
   sportEvents.forEach(event => { if (text.includes(event)) scores.deporte += 7; });
-  if (titleText.match(/vs\.?|vs|contra|championship|final/i)) scores.deporte += 3;
 
-  // ============ POLÍTICA (ALTA PRIORIDAD) ============
-  const politicaTerms = ["politica", "gobierno", "presidente", "elecciones", "ministro", "congreso",
-    "ley", "diputado", "senador", "voto", "electoral", "reforma", "decreto", "parlamento", "senado",
-    "poder judicial", "corte suprema", "justicia"];
-  const conflictTerms = ["guerra", "conflicto", "tratado", "diplomacia", "negociacion", "acuerdo",
-    "iran", "israel", "palestina", "ucrania", "rusia", "siria", "gaza", "occidente", "china"];
+  // ============ POLÍTICA ============
+  const politicaTerms = ["politica", "gobierno", "presidente", "elecciones", "ministro", "congreso", "ley", "diputados", "senadores", "presupuesto"];
+  const conflictTerms = ["guerra", "conflicto", "iran", "israel", "ucrania", "rusia"];
 
   politicaTerms.forEach(term => { if (text.includes(term)) scores.politica += 6; });
   conflictTerms.forEach(term => { if (text.includes(term)) scores.politica += 7; });
 
   // ============ ECONOMÍA ============
-  const economiaTerms = ["economia", "dolar", "inflacion", "mercados", "empresas", "inversiones",
-    "fmi", "banco central", "bolsa", "accion", "mercado financiero", "negocios", "comercio",
-    "exportacion", "importacion", "arancel", "impuesto", "tributario", "pib", "desempleo", "superavit"];
-
+  const economiaTerms = ["economia", "dolar", "inflacion", "mercado", "bolsa", "fmi", "banco central", "deficit", "pbi", "exportacion", "importacion", "ahorro"];
   economiaTerms.forEach(term => { if (text.includes(term)) scores.economia += 6; });
-  if (titleText.match(/dolar|inflacion|bolsa|mercado/i)) scores.economia += 4;
 
-  // ============ TECNOLOGÍA (ESPECÍFICO) ============
-  const techTerms = ["tecnologia", "software", "hardware", "computadora", "codigo", "programacion",
-    "algoritmo", "iot", "blockchain", "crypto", "metaverso", "inteligencia artificial", "ia",
-    "internet", "app", "smartphone", "iphone", "android", "startup", "github", "digital"];
-  const techCompanies = ["apple", "google", "microsoft", "meta", "amazon", "tesla", "nvidia", "openai", "chatgpt"];
-  const spaceTerms = ["espacio", "nasa", "satelite", "astronauta", "cohete", "astronomia", "universo", "planeta"];
+  // ============ TECNOLOGÍA ============
+  const techTerms = ["tecnologia", "software", "ia", "inteligencia artificial", "app", "digital", "gadget", "ciberseguridad", "redes sociales"];
+  const techCompanies = ["apple", "google", "microsoft", "nasa", "openai"];
 
   techTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 6; });
   techCompanies.forEach(term => { if (text.includes(term)) scores.tecnologia += 7; });
-  spaceTerms.forEach(term => { if (text.includes(term)) scores.tecnologia += 6; });
 
-  // ============ SALUD (MÉDICO Y ESPECÍFICO) ============
-  const healthTerms = ["salud", "medico", "doctor", "hospital", "enfermedad", "coronavirus",
-    "covid", "vacuna", "medicamento", "virus", "epidemia", "pandemia", "cancer", "diabetes",
-    "nutricion", "dieta", "ejercicio fisico", "bienestar", "psicologia", "mental"];
-
-  healthTerms.forEach(term => { if (text.includes(term)) scores.salud += 6; });
-  if (titleText.match(/salud|medico|hospital/i)) scores.salud += 4;
-
-  // ============ MEDIOAMBIENTE (CLIMA Y NATURALEZA) ============
-  const envTerms = ["clima", "calentamiento global", "contaminacion", "ecologia", "cambio climatico",
-    "sostenible", "verde", "bosque", "ocean", "lluvia", "tormenta", "niebla", "granizo", "nieve",
-    "sequia", "inundacion", "meteoro", "fenomeno climatico", "temperatura", "humedad", "viento"];
-
-  envTerms.forEach(term => { if (text.includes(term)) scores.medioambiente += 5; });
-  if (titleText.match(/clima|lluvia|tormenta|bloqueo atmosferico/i)) scores.medioambiente += 4;
-
-  // ============ VIAJES Y TURISMO ============
-  const travelTerms = ["viajes", "turismo", "destino", "hotel", "resort", "turistico",
-    "vacaciones", "playa", "montaña", "aeropuerto", "pasaje", "vuelo", "crucero"];
-
-  travelTerms.forEach(term => { if (text.includes(term)) scores.viajes += 5; });
-
-  // ============ GASTRONOMÍA (MUY ESPECÍFICA) ============
-  const foodTerms = ["gastronomia", "restaurante", "chef", "receta", "cocina profesional",
-    "cocinero", "menu", "plato gourmet", "michelin", "buen comer", "gastronomico"];
-
-  foodTerms.forEach(term => { if (text.includes(term)) scores.gastronomia += 7; });
-
-  // ============ CULTURA (ARTE Y ENTRETENIMIENTO) ============
-  const cultureTerms = ["cultura", "arte", "cine", "pelicula", "museo", "galeria",
-    "historia", "teatro", "literatura", "pintura", "escultura", "patrimonio"];
-  const musicTerms = ["musica", "concierto", "orquesta", "compositor", "musico", "sinfonica", "banda", "cancion"];
-
+  // ============ CULTURA ============
+  const cultureTerms = ["cultura", "arte", "cine", "pelicula", "museo", "teatro", "literatura", "exposicion"];
   cultureTerms.forEach(term => { if (text.includes(term)) scores.cultura += 6; });
-  musicTerms.forEach(term => { if (text.includes(term)) scores.cultura += 5; });
 
-  // ============ SOCIEDAD Y EDUCACIÓN ============
-  const societyTerms = ["educacion", "escuela", "universidad", "estudiante", "profesor",
-    "docente", "academico", "derechos", "comunidad", "igualdad", "justicia", "genero",
-    "feminismo", "discriminacion", "inclusion", "social"];
-
+  // ============ SOCIEDAD ============
+  const societyTerms = ["educacion", "escuela", "universidad", "derechos", "comunidad", "protesta", "marcha", "transito", "clima"];
   societyTerms.forEach(term => { if (text.includes(term)) scores.sociedad += 5; });
 
-  // ============ INTERNACIONAL (FALLBACK PARA NOTICIAS GLOBALES) ============
+  // ============ INTERNACIONAL ============
   const internationalCountries = ["estados unidos", "nueva york", "inglaterra", "francia", "españa",
-    "italia", "alemania", "japan", "tokio", "beijing", "londees", "paris", "berlin", "mexico",
-    "canada", "brasil", "australia", "nueva zelanda", "tailandia", "vietnam"];
-  const globalTerms = ["internacional", "global", "mundial", "paises", "europa", "asia", "america",
-    "africa", "oceania", "organizacion internacional", "naciones unidas", "onu", "union europea"];
+    "italia", "alemania", "tokio", "beijing", "londres", "paris", "mexico", "brasil"];
+  const globalTerms = ["internacional", "global", "mundial", "europa", "asia", "naciones unidas"];
 
   internationalCountries.forEach(term => { if (text.includes(term)) scores.internacional += 4; });
   globalTerms.forEach(term => { if (text.includes(term)) scores.internacional += 3; });
 
-  // ============ SISTEMA DE PRIORIDADES ============
-  // Encontrar el ganador (categoría con más puntos)
-  const maxScore = Math.max(...Object.values(scores));
-
-  // Si no hay puntuación suficiente, usar "internacional" como fallback universal
-  if (maxScore === 0) {
-    return "internacional";
-  }
-
-  // Seleccionar ganador
-  let selectedCategory = "internacional"; // Fallback default
-  let maxScoreValue = 0;
+  // ============ DECISION ============
+  let selectedCategory: string | null = null;
+  let maxScore = 0;
 
   for (const [category, score] of Object.entries(scores)) {
-    if (score > maxScoreValue) {
-      maxScoreValue = score;
+    if (score > maxScore) {
+      maxScore = score;
       selectedCategory = category;
     }
   }
 
-  // NUNCA devolver vacío - siempre hay categoría válida
+  // Change: If score is too low or no category found, return null (DO NOT SHOW)
+  if (maxScore < 4) return null;
+
   return selectedCategory;
 }
 
+// ---------------------------------------------------------
+// EXTRACCIÓN DE IMAGEN
+// ---------------------------------------------------------
 export function extractImageUrl(item: any): string | undefined {
   if (item.mediaContent && item.mediaContent.$ && item.mediaContent.$.url) return item.mediaContent.$.url;
   if (item.enclosure && item.enclosure.url) return item.enclosure.url;
@@ -460,10 +421,13 @@ function processNews(item: any, feedCategory: string, feedInfo: any): NewsItem |
   const mode = getDisplayMode(cleanSummary.length);
 
   // Categoría final e imagen
-  // Ignorar completamente categoría del feed - usar SOLO nuestro clasificador
-  const category = categorizeContent(cleanTitle, cleanSummary);
+  // Usar categoría del feed como apoyo
+  const category = categorizeContent(cleanTitle, cleanSummary, feedCategory);
 
-  // La categoría SIEMPRE es válida (nunca vacía), así que no hay que verificar
+  // SI no tiene categoría válida, DESCARTAR
+  if (!category) {
+    return null; // DISCARD - No se pudo categorizar correctamente o score bajo
+  }
 
   const imageUrl = extractImageUrl(item);
 
@@ -491,8 +455,12 @@ export function processNewsData(feedsData: any[]): NewsItem[] {
 
   for (const { feedInfo, data } of feedsData) {
     let feedCategory = "internacional";
-    if (feedInfo.id.includes("pol")) feedCategory = "política";
-    if (feedInfo.id.includes("eco")) feedCategory = "economía";
+    if (feedInfo.id.toLowerCase().includes("politica")) feedCategory = "política";
+    if (feedInfo.id.toLowerCase().includes("economia")) feedCategory = "economía";
+    if (feedInfo.id.toLowerCase().includes("sociedad")) feedCategory = "sociedad";
+    if (feedInfo.id.toLowerCase().includes("tecnologia")) feedCategory = "tecnología";
+    if (feedInfo.id.toLowerCase().includes("deporte")) feedCategory = "deporte";
+    if (feedInfo.id.toLowerCase().includes("cultura")) feedCategory = "cultura";
 
     const items = data.items || [];
     

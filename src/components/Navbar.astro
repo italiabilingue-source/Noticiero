@@ -11,6 +11,7 @@ const links = [
   { name: 'Sociedad', href: '/seccion/sociedad' },
   { name: 'Tecnología', href: '/seccion/tecnología' },
   { name: 'Cultura', href: '/seccion/cultura' },
+  { name: 'Deporte', href: '/seccion/deporte' },
   { name: 'MODO TV 📺', href: '/tv', special: true },
 ];
 
@@ -35,7 +36,6 @@ function buildUrl(path: string) {
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-20">
-      
       {/* Logo */}
       <div class="flex-shrink-0 flex items-center">
         <a href={buildUrl('/')} class="text-3xl font-serif font-black tracking-tight text-gray-900 hover:text-gray-700 transition-colors">

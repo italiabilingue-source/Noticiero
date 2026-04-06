@@ -74,6 +74,22 @@ export const GOSSIP_WORDS = [
   "famoso", "actriz", "actor", "telenovela", "reality", "influencer", "youtube", "instagram", "tiktok", "cantante", "música", "concierto", "gossip", "chisme", "divorcio", "relación", "novio", "novia", "boda", "pareja", "celebridad", "famosa", "farándula", "espectáculos", "entretenimiento", "videoclip", "disco", "artista", "estrella de cine", "hollywood", "reality show", "gran hermano", "casa de los famosos", "survivor", "el bachelor", "amor a ciegas", "love is blind", "repechaje", "eliminado", "gala", "tenista famoso", "futbolista novia", "juego de azar"
 ];
 
+// Non-journalistic content (advice, wellness, lifestyle, etc.)
+export const NON_JOURNALISTIC_WORDS = [
+  "consejos de vida", "bienestar", "hábitos", "longevidad", "curiosidades",
+  "lo que hace la gente", "estos son los", "estos son las", "notas tipo revista",
+  "cómo vivir más", "mejorar tu vida", "trucos para", "el secreto de",
+  "la técnica que", "beneficios de", "por qué deberías", "guía para",
+  "lo que nadie te dice", "no hagas esto", "evita estos", "viviendo mejor"
+];
+
+// Clickbait titles pattern (soft clickbait)
+export const CLICKBAIT_TITLES = [
+  "la gente que vive más", "estos son los hábitos", "lo que nadie te dice",
+  "no hace estos ejercicios", "estos son los mejores", "descubre cómo",
+  "te sorprenderá", "mira lo que pasó", "qué es lo que", "cómo lograr"
+];
+
 // Palabras que indican "basura" - noticias sin contenido real (live blogs, minuto a minuto, coberturas)
 export const JUNK_NEWS_PATTERNS = [
   "minuto a minuto", "al minuto", "en vivo", "en directo", "live blog", "live blogging",
@@ -83,7 +99,7 @@ export const JUNK_NEWS_PATTERNS = [
   "actualización en vivo", "actualización por actualización", "se viene"
 ];
 
-export const CATEGORIES = ["política", "economía", "sociedad", "tecnología", "cultura", "deporte", "gastronomía", "salud", "viajes", "medioambiente", "internacional"];
+export const CATEGORIES = ["política", "economía", "sociedad", "tecnología", "cultura", "deporte", "internacional"];
 
 export interface NewsItem {
   id: string;
