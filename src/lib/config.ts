@@ -35,6 +35,9 @@ export async function getSettings(): Promise<SiteSettings> {
         { id: 'lanacion_economia', name: 'La Nación - Economía', url: 'https://www.lanacion.com.ar/economia/rss/', country: 'AR', enabled: true },
         { id: 'lanacion_tecnologia', name: 'La Nación - Tecnología', url: 'https://www.lanacion.com.ar/tecnologia/rss/', country: 'AR', enabled: true },
         { id: 'lanacion_sociedad', name: 'La Nación - Sociedad', url: 'https://www.lanacion.com.ar/sociedad/rss/', country: 'AR', enabled: true },
+        { id: 'lanacion_deporte', name: 'La Nación - Deporte', url: 'https://www.lanacion.com.ar/deportes/rss/', country: 'AR', enabled: true },
+        { id: 'lanacion_cultura', name: 'La Nación - Cultura', url: 'https://www.lanacion.com.ar/cultura/rss/', country: 'AR', enabled: true },
+        { id: 'lanacion_mundo', name: 'La Nación - Mundo', url: 'https://www.lanacion.com.ar/mundo/rss/', country: 'AR', enabled: true },
 
         // INTERNACIONAL - BBC
         { id: 'bbc_world', name: 'BBC - World', url: 'http://feeds.bbci.co.uk/news/world/rss.xml', country: 'GB', enabled: true },
